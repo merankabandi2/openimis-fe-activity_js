@@ -86,6 +86,15 @@ export const ACTION_TYPE = {
   // Calendar
   GET_CALENDAR_ACTIVITIES: 'ACTIVITY_GET_CALENDAR_ACTIVITIES',
 
+  // PTBA Approve / Close
+  APPROVE_PTBA: 'ACTIVITY_APPROVE_PTBA',
+  CLOSE_PTBA: 'ACTIVITY_CLOSE_PTBA',
+
+  // Revision workflow
+  BEGIN_REVISION: 'ACTIVITY_BEGIN_REVISION',
+  APPROVE_REVISION: 'ACTIVITY_APPROVE_REVISION',
+  REJECT_REVISION: 'ACTIVITY_REJECT_REVISION',
+
   // Mutation
   MUTATION: 'ACTIVITY_MUTATION',
 };
@@ -137,6 +146,17 @@ export const MUTATION_SERVICE = {
   },
   PTBA_TRANSITION: {
     TRANSITION: 'transitionPtba',
+  },
+  PTBA_APPROVE: {
+    APPROVE: 'approvePtba',
+  },
+  PTBA_CLOSE: {
+    CLOSE: 'closePtba',
+  },
+  REVISION: {
+    BEGIN: 'beginRevision',
+    APPROVE: 'approveRevision',
+    REJECT: 'rejectRevision',
   },
   WEEKLY: {
     CREATE: 'createWeeklyPlanEntry',
@@ -864,6 +884,72 @@ export function transitionPtba(ptba, toStatus, clientMutationLabel) {
     MUTATION_SERVICE.PTBA_TRANSITION.TRANSITION,
     input,
     ACTION_TYPE.TRANSITION_PTBA,
+    clientMutationLabel,
+  );
+}
+
+// --- PTBA Approve / Close ---
+
+export function approvePtba(ptba, comment, clientMutationLabel) {
+  const input = `
+    ptbaId: "${ptba.id}"
+    ${comment ? `comment: "${formatGQLString(comment)}"` : ''}
+  `;
+  return PERFORM_MUTATION(
+    MUTATION_SERVICE.PTBA_APPROVE.APPROVE,
+    input,
+    ACTION_TYPE.APPROVE_PTBA,
+    clientMutationLabel,
+  );
+}
+
+export function closePtba(ptba, comment, clientMutationLabel) {
+  const input = `
+    ptbaId: "${ptba.id}"
+    ${comment ? `comment: "${formatGQLString(comment)}"` : ''}
+  `;
+  return PERFORM_MUTATION(
+    MUTATION_SERVICE.PTBA_CLOSE.CLOSE,
+    input,
+    ACTION_TYPE.CLOSE_PTBA,
+    clientMutationLabel,
+  );
+}
+
+// --- Revision workflow ---
+
+export function beginRevision(sousActiviteId, clientMutationLabel) {
+  const input = `sousActiviteId: "${sousActiviteId}"`;
+  return PERFORM_MUTATION(
+    MUTATION_SERVICE.REVISION.BEGIN,
+    input,
+    ACTION_TYPE.BEGIN_REVISION,
+    clientMutationLabel,
+  );
+}
+
+export function approveRevision(sousActiviteId, comment, clientMutationLabel) {
+  const input = `
+    sousActiviteId: "${sousActiviteId}"
+    ${comment ? `comment: "${formatGQLString(comment)}"` : ''}
+  `;
+  return PERFORM_MUTATION(
+    MUTATION_SERVICE.REVISION.APPROVE,
+    input,
+    ACTION_TYPE.APPROVE_REVISION,
+    clientMutationLabel,
+  );
+}
+
+export function rejectRevision(sousActiviteId, reason, clientMutationLabel) {
+  const input = `
+    sousActiviteId: "${sousActiviteId}"
+    ${reason ? `reason: "${formatGQLString(reason)}"` : ''}
+  `;
+  return PERFORM_MUTATION(
+    MUTATION_SERVICE.REVISION.REJECT,
+    input,
+    ACTION_TYPE.REJECT_REVISION,
     clientMutationLabel,
   );
 }

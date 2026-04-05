@@ -699,6 +699,34 @@ function reducer(state = STORE_STATE, action) {
     case SUCCESS(ACTION_TYPE.TRANSITION_PTBA):
       return dispatchMutationResp(state, MUTATION_SERVICE.PTBA_TRANSITION.TRANSITION, action);
 
+    // --- PTBA Approve / Close mutations ---
+    case REQUEST(ACTION_TYPE.APPROVE_PTBA):
+    case REQUEST(ACTION_TYPE.CLOSE_PTBA):
+      return dispatchMutationReq(state, action);
+    case ERROR(ACTION_TYPE.APPROVE_PTBA):
+    case ERROR(ACTION_TYPE.CLOSE_PTBA):
+      return dispatchMutationErr(state, action);
+    case SUCCESS(ACTION_TYPE.APPROVE_PTBA):
+      return dispatchMutationResp(state, MUTATION_SERVICE.PTBA_APPROVE.APPROVE, action);
+    case SUCCESS(ACTION_TYPE.CLOSE_PTBA):
+      return dispatchMutationResp(state, MUTATION_SERVICE.PTBA_CLOSE.CLOSE, action);
+
+    // --- Revision workflow mutations ---
+    case REQUEST(ACTION_TYPE.BEGIN_REVISION):
+    case REQUEST(ACTION_TYPE.APPROVE_REVISION):
+    case REQUEST(ACTION_TYPE.REJECT_REVISION):
+      return dispatchMutationReq(state, action);
+    case ERROR(ACTION_TYPE.BEGIN_REVISION):
+    case ERROR(ACTION_TYPE.APPROVE_REVISION):
+    case ERROR(ACTION_TYPE.REJECT_REVISION):
+      return dispatchMutationErr(state, action);
+    case SUCCESS(ACTION_TYPE.BEGIN_REVISION):
+      return dispatchMutationResp(state, MUTATION_SERVICE.REVISION.BEGIN, action);
+    case SUCCESS(ACTION_TYPE.APPROVE_REVISION):
+      return dispatchMutationResp(state, MUTATION_SERVICE.REVISION.APPROVE, action);
+    case SUCCESS(ACTION_TYPE.REJECT_REVISION):
+      return dispatchMutationResp(state, MUTATION_SERVICE.REVISION.REJECT, action);
+
     // --- Calendar activities ---
     case REQUEST(ACTION_TYPE.GET_CALENDAR_ACTIVITIES):
       return {

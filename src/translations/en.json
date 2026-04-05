@@ -239,12 +239,21 @@
   "activity.weeklyPlan.mutation.updateLabel": "Update weekly plan entry",
   "activity.weeklyPlan.mutation.deleteLabel": "Delete weekly plan entry",
 
+  "activity.ptba.action.approve": "Approve",
+  "activity.ptba.action.close": "Close",
+  "activity.ptba.mutation.approveLabel": "Approve PTBA",
+  "activity.ptba.mutation.closeLabel": "Close PTBA",
+
   "activity.revision.status": "Revision status",
   "activity.revision.comment": "Revision comment",
   "activity.revision.INITIAL": "Initial",
   "activity.revision.REVISE": "Revised",
   "activity.revision.AJOUTE": "Added",
   "activity.revision.ABANDONNE": "Abandoned",
+  "activity.revision.begin": "Begin revision",
+  "activity.revision.approve": "Approve revision",
+  "activity.revision.mutation.beginLabel": "Begin revision sub-activity {id}",
+  "activity.revision.mutation.approveLabel": "Approve revision sub-activity {id}",
 
   "activity.weekly.PLANIFIE": "Planned",
   "activity.weekly.EN_COURS": "In progress",

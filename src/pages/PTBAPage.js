@@ -33,6 +33,8 @@ import {
   updatePtba,
   createComposante,
   transitionPtba,
+  approvePtba,
+  closePtba,
 } from '../actions';
 import {
   MODULE_NAME,
@@ -40,6 +42,7 @@ import {
   RIGHT_PTBA_UPDATE,
   ROUTE_ACTIVITE,
   PTBA_VALID_TRANSITIONS,
+  PTBA_STATUS,
 } from '../constants';
 import { ACTION_TYPE } from '../actions';
 import { mutationLabel, pageTitle } from '../utils/string-utils';
@@ -79,6 +82,8 @@ function PTBAPage({
   clearConfirm,
   createComposante,
   transitionPtba,
+  approvePtba,
+  closePtba,
 }) {
   const modulesManager = useModulesManager();
   const classes = useStyles();
@@ -198,6 +203,22 @@ function PTBAPage({
     );
   };
 
+  const handleApprovePtba = () => {
+    approvePtba(
+      ptba,
+      '',
+      formatMessage('ptba.mutation.approveLabel'),
+    );
+  };
+
+  const handleClosePtba = () => {
+    closePtba(
+      ptba,
+      '',
+      formatMessage('ptba.mutation.closeLabel'),
+    );
+  };
+
   const actions = [
     !!ptbaId && !pageLocked && {
       doIt: openDeletePtbaConfirmDialog,
@@ -250,20 +271,47 @@ function PTBAPage({
             <PTBAHeadPanel ptba={ptba} />
 
             {/* PTBA Status Transition Buttons */}
-            {validTransitions.length > 0 && !pageLocked && (
+            {!pageLocked && (
               <div className={classes.transitionBar}>
-                {validTransitions.map((toStatus) => (
+                {ptba?.status === PTBA_STATUS.DRAFT && (
                   <Button
-                    key={toStatus}
                     variant="contained"
                     color="primary"
                     size="small"
-                    onClick={() => handlePtbaTransition(toStatus)}
+                    onClick={handleApprovePtba}
                     disabled={submittingMutation}
                   >
-                    {formatMessage(`ptba.transition.${toStatus}`)}
+                    {formatMessage('ptba.action.approve')}
                   </Button>
-                ))}
+                )}
+                {ptba?.status === PTBA_STATUS.ACTIVE && (
+                  <Button
+                    variant="contained"
+                    color="secondary"
+                    size="small"
+                    onClick={handleClosePtba}
+                    disabled={submittingMutation}
+                  >
+                    {formatMessage('ptba.action.close')}
+                  </Button>
+                )}
+                {validTransitions
+                  .filter((s) => !(
+                    (ptba?.status === PTBA_STATUS.DRAFT && s === 'APPROVED')
+                    || (ptba?.status === PTBA_STATUS.ACTIVE && s === 'CLOSED')
+                  ))
+                  .map((toStatus) => (
+                    <Button
+                      key={toStatus}
+                      variant="outlined"
+                      color="primary"
+                      size="small"
+                      onClick={() => handlePtbaTransition(toStatus)}
+                      disabled={submittingMutation}
+                    >
+                      {formatMessage(`ptba.transition.${toStatus}`)}
+                    </Button>
+                  ))}
               </div>
             )}
 
@@ -349,6 +397,8 @@ const mapDispatchToProps = (dispatch) => bindActionCreators({
   fetchPtba,
   createComposante,
   transitionPtba,
+  approvePtba,
+  closePtba,
   coreConfirm,
   clearConfirm,
   journalize,

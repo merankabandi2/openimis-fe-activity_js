@@ -18,6 +18,8 @@ import {
 import AddIcon from '@material-ui/icons/Add';
 import SaveIcon from '@material-ui/icons/Save';
 import DeleteIcon from '@material-ui/icons/Delete';
+import EditIcon from '@material-ui/icons/Edit';
+import CheckCircleIcon from '@material-ui/icons/CheckCircle';
 import { makeStyles } from '@material-ui/styles';
 
 import {
@@ -29,6 +31,8 @@ import {
   createSousActivite,
   updateSousActivite,
   deleteSousActivite,
+  beginRevision,
+  approveRevision,
 } from '../../actions';
 import { MODULE_NAME } from '../../constants';
 import { formatBIFAmount } from '../../utils/string-utils';
@@ -108,6 +112,8 @@ function SousActiviteTable({
   createSousActivite,
   updateSousActivite,
   deleteSousActivite,
+  beginRevision,
+  approveRevision,
 }) {
   const modulesManager = useModulesManager();
   const classes = useStyles();
@@ -196,6 +202,21 @@ function SousActiviteTable({
         formatMessageWithValues('sousActivite.mutation.deleteLabel', { id: row.id }),
       );
     }
+  };
+
+  const handleBeginRevision = (row) => {
+    beginRevision(
+      row.id,
+      formatMessageWithValues('revision.mutation.beginLabel', { id: row.id }),
+    );
+  };
+
+  const handleApproveRevision = (row) => {
+    approveRevision(
+      row.id,
+      '',
+      formatMessageWithValues('revision.mutation.approveLabel', { id: row.id }),
+    );
   };
 
   const grandTotal = rows.reduce((sum, row) => sum + computeRowTotal(row), 0);
@@ -377,6 +398,20 @@ function SousActiviteTable({
                           </IconButton>
                         </Tooltip>
                       )}
+                      {!row._isNew && row.revisionStatus !== 'REVISE' && (
+                        <Tooltip title={formatMessage('revision.begin')}>
+                          <IconButton size="small" onClick={() => handleBeginRevision(row)}>
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      )}
+                      {!row._isNew && row.revisionStatus === 'REVISE' && (
+                        <Tooltip title={formatMessage('revision.approve')}>
+                          <IconButton size="small" onClick={() => handleApproveRevision(row)}>
+                            <CheckCircleIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      )}
                       <Tooltip title={formatMessage('tooltip.delete')}>
                         <IconButton size="small" onClick={() => handleDeleteRow(row)}>
                           <DeleteIcon fontSize="small" />
@@ -422,6 +457,8 @@ const mapDispatchToProps = (dispatch) => bindActionCreators({
   createSousActivite,
   updateSousActivite,
   deleteSousActivite,
+  beginRevision,
+  approveRevision,
   journalize,
 }, dispatch);
 

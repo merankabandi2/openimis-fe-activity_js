@@ -16,13 +16,13 @@ import {
   journalize,
 } from '@openimis/fe-core';
 import { fetchPtbas, deletePtba } from '../../actions';
-import { ACTION_TYPE } from '../../actions';
 import {
   MODULE_NAME,
   RIGHT_PTBA_SEARCH,
   RIGHT_PTBA_DELETE,
   ROUTE_PTBA,
 } from '../../constants';
+import PTBAFilter from './PTBAFilter';
 
 const PTBA_STATUS_COLORS = {
   DRAFT: 'default',
@@ -94,7 +94,7 @@ function PTBASearcher({
     'ptba.status',
     'ptba.fiscalYearStart',
     'ptba.fiscalYearEnd',
-    'emptyLabel',
+    '',
   ];
 
   const sorts = () => [
@@ -154,9 +154,14 @@ function PTBASearcher({
 
   const defaultFilters = () => ({});
 
+  const ptbaFilter = ({ filters, onChangeFilters }) => (
+    <PTBAFilter filters={filters} onChangeFilters={onChangeFilters} />
+  );
+
   return (
     <Searcher
       module="activity"
+      FilterPane={ptbaFilter}
       fetch={fetchData}
       items={ptbas}
       itemsPageInfo={ptbasPageInfo}
