@@ -127,10 +127,14 @@ function ActivityCalendarPage({
     fetchPtbas(modulesManager, ['first: 50']);
   }, []);
 
-  // Auto-select first PTBA
+  // Auto-select first PTBA and jump calendar to its fiscal year
   useEffect(() => {
     if (ptbas && ptbas.length > 0 && !filters.ptbaId) {
       setFilters((prev) => ({ ...prev, ptbaId: ptbas[0].id }));
+      // Jump calendar to the PTBA's fiscal year start so activities are visible
+      if (ptbas[0].fiscalYearStart) {
+        setCurrentDate(new Date(ptbas[0].fiscalYearStart));
+      }
     }
   }, [ptbas]);
 

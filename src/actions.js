@@ -4,6 +4,7 @@ import {
   formatMutation,
   formatPageQuery,
   formatPageQueryWithCount,
+  formatQuery,
   graphql,
 } from '@openimis/fe-core';
 
@@ -691,7 +692,7 @@ export function reportQuarterlyExecution(data, clientMutationLabel) {
 // --- Dashboard actions ---
 
 export function fetchPtbaDashboard(modulesManager, params) {
-  const payload = formatPageQuery('ptbaDashboard', params, [
+  const payload = formatQuery('ptbaDashboard', params, [
     'budgetPrevu',
     'budgetEngage',
     'budgetDecaisse',
