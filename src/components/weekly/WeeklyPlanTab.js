@@ -84,6 +84,16 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
+// Serialize a local Date as YYYY-MM-DD. toISOString() converts to UTC first,
+// which in UTC+2 (Bujumbura) turns a local Monday 00:00 into the previous
+// Sunday — shifting every weekStart/weekEnd a day earlier.
+function toLocalDateString(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
 function getWeeksForQuarter(quarter, year) {
   const weeks = [];
   if (!quarter || !year) return weeks;
@@ -109,8 +119,8 @@ function getWeeksForQuarter(quarter, year) {
 
     weeks.push({
       weekNum,
-      start: currentMonday.toISOString().split('T')[0],
-      end: friday.toISOString().split('T')[0],
+      start: toLocalDateString(currentMonday),
+      end: toLocalDateString(friday),
       label: `Sem ${weekNum}`,
       dateRange: `${day1}/${mon1} - ${day2}/${mon2}`,
     });
@@ -130,6 +140,7 @@ function getCurrentQuarterAndYear() {
 }
 
 function WeeklyPlanTab({
+  journalize,
   activiteId,
   sousActivites,
   readOnly,

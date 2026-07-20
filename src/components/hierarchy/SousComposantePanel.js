@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
 
@@ -90,7 +90,9 @@ function SousComposantePanel({
   deleteSousComposante,
   createActivite,
   submittingMutation,
+  confirmed,
   coreConfirm,
+  clearConfirm,
 }) {
   const modulesManager = useModulesManager();
   const classes = useStyles();
@@ -98,6 +100,7 @@ function SousComposantePanel({
 
   const [editing, setEditing] = useState(false);
   const [editData, setEditData] = useState({ code: sousComposante.code, name: sousComposante.name });
+  const [confirmedAction, setConfirmedAction] = useState(() => null);
   const [actDialogOpen, setActDialogOpen] = useState(false);
   const [newActivite, setNewActivite] = useState({
     code: '',
@@ -109,6 +112,18 @@ function SousComposantePanel({
   });
 
   const activites = sousComposante.activites?.edges?.map((e) => e.node) || [];
+
+  // Fire the stored action only after the user clicks OK in the confirm
+  // dialog. The confirmedAction guard matters: several panels on the page
+  // watch the same shared state.core.confirmed, and only the panel that
+  // opened the dialog holds a callback.
+  useEffect(() => {
+    if (confirmed && confirmedAction) {
+      confirmedAction();
+      setConfirmedAction(() => null);
+    }
+    return () => confirmed && clearConfirm(null);
+  }, [confirmed]);
 
   const handleStartEdit = (e) => {
     e.stopPropagation();
@@ -138,13 +153,13 @@ function SousComposantePanel({
 
   const handleDelete = (e) => {
     e.stopPropagation();
+    setConfirmedAction(() => () => deleteSousComposante(
+      sousComposante,
+      formatMessageWithValues('sousComposante.mutation.deleteLabel', { id: sousComposante.id }),
+    ));
     coreConfirm(
       formatMessage('sousComposante.delete.confirm.title'),
       formatMessage('sousComposante.delete.confirm.message'),
-    );
-    deleteSousComposante(
-      sousComposante,
-      formatMessageWithValues('sousComposante.mutation.deleteLabel', { id: sousComposante.id }),
     );
   };
 
@@ -333,6 +348,7 @@ function SousComposantePanel({
 
 const mapStateToProps = (state) => ({
   submittingMutation: state.activity.submittingMutation,
+  confirmed: state.core.confirmed,
 });
 
 const mapDispatchToProps = (dispatch) => bindActionCreators({

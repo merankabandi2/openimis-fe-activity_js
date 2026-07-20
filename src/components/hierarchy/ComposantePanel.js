@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
 
@@ -102,6 +102,19 @@ function ComposantePanel({
   const [editData, setEditData] = useState({ code: composante.code, name: composante.name });
   const [scDialogOpen, setScDialogOpen] = useState(false);
   const [newSc, setNewSc] = useState({ code: '', name: '' });
+  const [confirmedAction, setConfirmedAction] = useState(() => null);
+
+  // Fire the stored action only after the user clicks OK in the confirm
+  // dialog. The confirmedAction guard matters: several panels on the page
+  // watch the same shared state.core.confirmed, and only the panel that
+  // opened the dialog holds a callback.
+  useEffect(() => {
+    if (confirmed && confirmedAction) {
+      confirmedAction();
+      setConfirmedAction(() => null);
+    }
+    return () => confirmed && clearConfirm(null);
+  }, [confirmed]);
 
   const sousComposantes = composante.sousComposantes?.edges?.map((e) => e.node) || [];
 
@@ -149,15 +162,13 @@ function ComposantePanel({
 
   const handleDelete = (e) => {
     e.stopPropagation();
+    setConfirmedAction(() => () => deleteComposante(
+      composante,
+      formatMessageWithValues('composante.mutation.deleteLabel', { id: composante.id }),
+    ));
     coreConfirm(
       formatMessage('composante.delete.confirm.title'),
       formatMessage('composante.delete.confirm.message'),
-    );
-    // We store the callback, but since this component may unmount we do it inline via useEffect
-    // For simplicity, dispatch directly after confirm
-    deleteComposante(
-      composante,
-      formatMessageWithValues('composante.mutation.deleteLabel', { id: composante.id }),
     );
   };
 

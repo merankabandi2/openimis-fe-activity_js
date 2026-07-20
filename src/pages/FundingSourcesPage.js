@@ -72,6 +72,7 @@ const EMPTY_SOURCE = {
 };
 
 function FundingSourcesPage({
+  journalize,
   rights,
   fundingSources,
   fetchingFundingSources,

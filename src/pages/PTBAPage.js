@@ -67,6 +67,7 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 function PTBAPage({
+  journalize,
   clearPtba,
   createPtba,
   deletePtba,
@@ -108,7 +109,9 @@ function PTBAPage({
   }, [ptbaId]);
 
   useEffect(() => {
-    if (confirmed) confirmedAction();
+    // confirmedAction may be null when a child panel (Composante/SousComposante)
+    // triggered the shared confirm dialog — only fire our own stored action.
+    if (confirmed && confirmedAction) confirmedAction();
     return () => confirmed && clearConfirm(null);
   }, [confirmed]);
 

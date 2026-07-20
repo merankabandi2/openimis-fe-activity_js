@@ -32,6 +32,7 @@ const PTBA_STATUS_COLORS = {
 };
 
 function PTBASearcher({
+  journalize,
   fetchPtbas,
   fetchingPtbas,
   fetchedPtbas,

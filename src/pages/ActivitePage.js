@@ -92,6 +92,7 @@ function TabPanel({ children, value, index }) {
 }
 
 function ActivitePage({
+  journalize,
   activiteId,
   fetchActivite,
   clearActivite,

@@ -117,12 +117,29 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
+// Serialize a local Date as YYYY-MM-DD. toISOString() converts to UTC first,
+// which in UTC+2 (Bujumbura) turns a local Monday 00:00 into the previous
+// Sunday — shifting every weekStart/weekEnd a day earlier.
+function toLocalDateString(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+// 'YYYY-MM-DD' passed to new Date() is parsed as UTC midnight; parse the
+// components explicitly so the seed dates stay local.
+function parseLocalDate(value) {
+  const [y, m, d] = String(value).split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
 function getWeeksInRange(startDate, endDate) {
   const weeks = [];
   if (!startDate || !endDate) return weeks;
 
-  const start = new Date(startDate);
-  const end = new Date(endDate);
+  const start = parseLocalDate(startDate);
+  const end = parseLocalDate(endDate);
 
   // Find the Monday of the week containing startDate
   const dayOfWeek = start.getDay();
@@ -137,8 +154,8 @@ function getWeeksInRange(startDate, endDate) {
 
     weeks.push({
       weekNum,
-      start: currentMonday.toISOString().split('T')[0],
-      end: friday.toISOString().split('T')[0],
+      start: toLocalDateString(currentMonday),
+      end: toLocalDateString(friday),
       label: `Sem ${weekNum}`,
       dateRange: `${formatShortDate(currentMonday)} - ${formatShortDate(friday)}`,
     });
@@ -158,6 +175,7 @@ function formatShortDate(date) {
 }
 
 function WeeklyPlanPage({
+  journalize,
   rights,
   ptbas,
   fetchingPtbas,
