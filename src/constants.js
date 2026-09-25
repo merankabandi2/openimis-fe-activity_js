@@ -174,11 +174,11 @@ export const TRANSITION_LABELS = {
   REALISE_EN_COURS: 'transition.reouvrir',
 };
 
-// --- Rights (170001-170013) ---
-export const RIGHT_PTBA_SEARCH = 170001;
-export const RIGHT_PTBA_CREATE = 170002;
-export const RIGHT_PTBA_UPDATE = 170003;
-export const RIGHT_PTBA_DELETE = 170004;
+// --- Rights (170005-170017; 170001-170004 are social_protection beneficiary rights) ---
+export const RIGHT_PTBA_SEARCH = 170014;
+export const RIGHT_PTBA_CREATE = 170015;
+export const RIGHT_PTBA_UPDATE = 170016;
+export const RIGHT_PTBA_DELETE = 170017;
 export const RIGHT_ACTIVITY_SEARCH = 170005;
 export const RIGHT_ACTIVITY_CREATE = 170006;
 export const RIGHT_ACTIVITY_UPDATE = 170007;

@@ -143,7 +143,7 @@ function WeeklyPlanTab({
   journalize,
   activiteId,
   sousActivites,
-  readOnly,
+  permissions,
   weeklyPlanEntries,
   fetchingWeeklyPlan,
   submittingMutation,
@@ -157,6 +157,9 @@ function WeeklyPlanTab({
   const classes = useStyles();
   const { formatMessage } = useTranslations(MODULE_NAME, modulesManager);
   const prevSubmittingMutationRef = useRef();
+  const canCreate = !!permissions?.canCreateWeekly;
+  const canUpdate = !!permissions?.canUpdateWeekly;
+  const canDelete = !!permissions?.canDeleteWeekly;
 
   const { quarter, year } = getCurrentQuarterAndYear();
   const weeks = getWeeksForQuarter(quarter, year);
@@ -167,7 +170,7 @@ function WeeklyPlanTab({
 
   useEffect(() => {
     if (activiteId) {
-      fetchWeeklyPlanEntries(modulesManager, [`sousActivite_Activite_Id: "${activiteId}"`, 'first: 500']);
+      fetchWeeklyPlanEntries(modulesManager, [`sousActivite_Activite_Id: "${activiteId}"`]);
     }
   }, [activiteId]);
 
@@ -175,7 +178,7 @@ function WeeklyPlanTab({
     if (prevSubmittingMutationRef.current && !submittingMutation) {
       journalize(mutation);
       if (activiteId) {
-        fetchWeeklyPlanEntries(modulesManager, [`sousActivite_Activite_Id: "${activiteId}"`, 'first: 500']);
+        fetchWeeklyPlanEntries(modulesManager, [`sousActivite_Activite_Id: "${activiteId}"`]);
       }
     }
   }, [submittingMutation]);
@@ -192,7 +195,7 @@ function WeeklyPlanTab({
   });
 
   const handleCellClick = (sa, week, existingEntry) => {
-    if (readOnly && !existingEntry) return;
+    if (!canCreate && !existingEntry) return;
     setEditingSousActiviteName(sa.name);
     setEditingEntry(existingEntry || {
       sousActiviteId: sa.id,
@@ -288,7 +291,7 @@ function WeeklyPlanTab({
                         <div>
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                             <WeeklyStatusBadge status={entry.status} size="small" />
-                            {!readOnly && (
+                            {canDelete && (
                               <Tooltip title={formatMessage('tooltip.delete')}>
                                 <IconButton
                                   size="small"
@@ -309,7 +312,7 @@ function WeeklyPlanTab({
                           )}
                         </div>
                       ) : (
-                        !readOnly && (
+                        canCreate && (
                           <Tooltip title={formatMessage('tooltip.createButton')}>
                             <AddIcon
                               fontSize="small"
@@ -332,16 +335,16 @@ function WeeklyPlanTab({
           open={formOpen}
           onClose={() => { setFormOpen(false); setEditingEntry(null); }}
           onSave={handleFormSave}
-          onDelete={(entry) => {
+          onDelete={canDelete ? (entry) => {
             if (entry?.id) {
               deleteWeeklyPlanEntry(entry, formatMessage('weeklyPlan.mutation.deleteLabel'));
             }
             setFormOpen(false);
             setEditingEntry(null);
-          }}
+          } : null}
           entry={editingEntry}
           sousActiviteName={editingSousActiviteName}
-          readOnly={readOnly}
+          readOnly={editingEntry?.id ? !canUpdate : !canCreate}
         />
       )}
     </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
 
@@ -39,6 +39,7 @@ import {
 } from '../../actions';
 import { MODULE_NAME } from '../../constants';
 import { formatBIFAmount } from '../../utils/string-utils';
+import { useOwnedConfirm } from '../../utils/useOwnedConfirm';
 import SousComposantePanel from './SousComposantePanel';
 
 const useStyles = makeStyles((theme) => ({
@@ -84,11 +85,12 @@ const useStyles = makeStyles((theme) => ({
 function ComposantePanel({
   composante,
   ptbaId,
-  readOnly,
+  permissions,
   onActiviteClick,
   updateComposante,
   deleteComposante,
   createSousComposante,
+  confirm,
   confirmed,
   submittingMutation,
   coreConfirm,
@@ -102,19 +104,7 @@ function ComposantePanel({
   const [editData, setEditData] = useState({ code: composante.code, name: composante.name });
   const [scDialogOpen, setScDialogOpen] = useState(false);
   const [newSc, setNewSc] = useState({ code: '', name: '' });
-  const [confirmedAction, setConfirmedAction] = useState(() => null);
-
-  // Fire the stored action only after the user clicks OK in the confirm
-  // dialog. The confirmedAction guard matters: several panels on the page
-  // watch the same shared state.core.confirmed, and only the panel that
-  // opened the dialog holds a callback.
-  useEffect(() => {
-    if (confirmed && confirmedAction) {
-      confirmedAction();
-      setConfirmedAction(() => null);
-    }
-    return () => confirmed && clearConfirm(null);
-  }, [confirmed]);
+  const askConfirm = useOwnedConfirm(confirm, confirmed, coreConfirm, clearConfirm);
 
   const sousComposantes = composante.sousComposantes?.edges?.map((e) => e.node) || [];
 
@@ -162,13 +152,13 @@ function ComposantePanel({
 
   const handleDelete = (e) => {
     e.stopPropagation();
-    setConfirmedAction(() => () => deleteComposante(
-      composante,
-      formatMessageWithValues('composante.mutation.deleteLabel', { id: composante.id }),
-    ));
-    coreConfirm(
+    askConfirm(
       formatMessage('composante.delete.confirm.title'),
       formatMessage('composante.delete.confirm.message'),
+      () => deleteComposante(
+        composante,
+        formatMessageWithValues('composante.mutation.deleteLabel', { id: composante.id }),
+      ),
     );
   };
 
@@ -229,18 +219,22 @@ function ComposantePanel({
               <Typography className={classes.composanteBudget}>
                 {formatBIFAmount(budget)} BIF
               </Typography>
-              {!readOnly && (
+              {(permissions?.canEditHierarchy || permissions?.canDeleteHierarchy) && (
                 <div className={classes.headerActions}>
-                  <Tooltip title={formatMessage('tooltip.edit')}>
-                    <IconButton size="small" onClick={handleStartEdit}>
-                      <EditIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title={formatMessage('tooltip.delete')}>
-                    <IconButton size="small" onClick={handleDelete}>
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
+                  {permissions.canEditHierarchy && (
+                    <Tooltip title={formatMessage('tooltip.edit')}>
+                      <IconButton size="small" onClick={handleStartEdit}>
+                        <EditIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  )}
+                  {permissions.canDeleteHierarchy && (
+                    <Tooltip title={formatMessage('tooltip.delete')}>
+                      <IconButton size="small" onClick={handleDelete}>
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  )}
                 </div>
               )}
             </>
@@ -254,11 +248,11 @@ function ComposantePanel({
                 key={sc.id}
                 sousComposante={sc}
                 composanteId={composante.id}
-                readOnly={readOnly}
+                permissions={permissions}
                 onActiviteClick={onActiviteClick}
               />
             ))}
-          {!readOnly && (
+          {permissions?.canAddSousComposante && (
             <Button
               size="small"
               startIcon={<AddIcon />}
@@ -317,6 +311,7 @@ function ComposantePanel({
 }
 
 const mapStateToProps = (state) => ({
+  confirm: state.core.confirm,
   confirmed: state.core.confirmed,
   submittingMutation: state.activity.submittingMutation,
 });

@@ -102,8 +102,8 @@ function TransitionHistory({
 
   const formatUser = (user) => {
     if (!user) return '';
-    if (user.firstName && user.lastName) {
-      return `${user.firstName} ${user.lastName}`;
+    if (user.otherNames && user.lastName) {
+      return `${user.otherNames} ${user.lastName}`;
     }
     return user.username || '';
   };

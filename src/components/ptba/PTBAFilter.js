@@ -3,6 +3,7 @@ import _debounce from 'lodash/debounce';
 import { Grid, FormControl, InputLabel, Select, MenuItem } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import { TextInput, ControlledField, useModulesManager, useTranslations } from '@openimis/fe-core';
+import { enumLiteral } from '../../utils/gql-values';
 
 const MODULE_NAME = 'activity';
 const DEBOUNCE_TIME = 500;
@@ -75,7 +76,7 @@ function PTBAFilter({ filters, onChangeFilters }) {
                   {
                     id: 'status',
                     value: e.target.value,
-                    filter: e.target.value ? `status: "${e.target.value}"` : null,
+                    filter: e.target.value ? `status: ${enumLiteral(e.target.value)}` : null,
                   },
                 ])}
               >

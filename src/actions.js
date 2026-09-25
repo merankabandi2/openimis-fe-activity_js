@@ -1,5 +1,4 @@
 import {
-  decodeId,
   formatGQLString,
   formatMutation,
   formatPageQuery,
@@ -7,6 +6,7 @@ import {
   formatQuery,
   graphql,
 } from '@openimis/fe-core';
+import { collectAllPages, MAX_PAGE_SIZE } from './utils/pagination';
 
 const REQUEST = (actionType) => `${actionType}_REQ`;
 const SUCCESS = (actionType) => `${actionType}_RESP`;
@@ -237,7 +237,7 @@ const ACTIVITE_FULL_PROJECTION = () => [
   'revisionComment',
   'sousComposante { id code name composante { id code name ptba { id code name } } }',
   'sousActivites { edges { node { id code name unit quantityTotal quantityT1 quantityT2 quantityT3 quantityT4 unitCost budgetT1 budgetT2 budgetT3 budgetT4 budgetTotal expenseCategoryCode expenseCategory sortOrder quantityInitial quantityRevised unitCostInitial unitCostRevised budgetInitial budgetRevised dateStart dateEnd responsible intervenants revisionStatus revisionComment fundingAllocations { edges { node { id fundingSource { id code name } amount } } } } } }',
-  'indicators { edges { node { id name baseline target currentValue } } }',
+  'indicators { edges { node { id name baseline target achievements { edges { node { achieved date timestamp } } } } } }',
 ];
 
 const SOUS_ACTIVITE_PROJECTION = () => [
@@ -311,6 +311,44 @@ const PERFORM_MUTATION = (mutationType, mutationInput, ACTION, clientMutationLab
   );
 };
 
+const PAGE_TYPES = (actionType) => [
+  `${actionType}_PAGE_REQ`,
+  `${actionType}_PAGE_RESP`,
+  `${actionType}_PAGE_ERR`,
+];
+
+/**
+ * Reads every page of a connection (MAX_PAGE_SIZE rows per request) and
+ * dispatches a single REQUEST / SUCCESS or ERROR for `actionType`, so the
+ * reducer receives the complete list. Page requests use their own action
+ * types, which the reducer ignores.
+ */
+export function fetchAllPages(entity, filters, projections, actionType) {
+  return async (dispatch) => {
+    dispatch({ type: REQUEST(actionType) });
+    let failure = null;
+    const payload = await collectAllPages(entity, async (after) => {
+      const pageFilters = [...filters, `first: ${MAX_PAGE_SIZE}`];
+      if (after) pageFilters.push(`after: "${after}"`);
+      const response = await dispatch(graphql(
+        formatPageQueryWithCount(entity, pageFilters, projections),
+        PAGE_TYPES(actionType),
+      ));
+      if (!response || response.error) {
+        failure = response || {};
+        return null;
+      }
+      return response.payload;
+    });
+    if (failure || !payload) {
+      dispatch({ type: ERROR(actionType), payload: failure?.payload ?? {} });
+      return null;
+    }
+    dispatch({ type: SUCCESS(actionType), payload });
+    return payload;
+  };
+}
+
 // --- PTBA actions ---
 
 export function fetchPtbas(modulesManager, params) {
@@ -335,8 +373,8 @@ const formatPtbaGQL = (ptba) => `
   ${ptba?.name ? `name: "${formatGQLString(ptba.name)}"` : ''}
   ${ptba?.fiscalYearStart ? `fiscalYearStart: "${ptba.fiscalYearStart}"` : ''}
   ${ptba?.fiscalYearEnd ? `fiscalYearEnd: "${ptba.fiscalYearEnd}"` : ''}
-  ${ptba?.status ? `status: "${ptba.status}"` : ''}
 `;
+// The PTBA status changes only through transitionPtba / approvePtba / closePtba.
 
 export function createPtba(ptba, clientMutationLabel) {
   return PERFORM_MUTATION(
@@ -455,8 +493,7 @@ export function deleteSousComposante(sousComposante, clientMutationLabel) {
 // --- Activite actions ---
 
 export function fetchActivites(modulesManager, params) {
-  const payload = formatPageQueryWithCount('activite', params, ACTIVITE_LIST_PROJECTION());
-  return graphql(payload, ACTION_TYPE.SEARCH_ACTIVITES);
+  return fetchAllPages('activite', params, ACTIVITE_LIST_PROJECTION(), ACTION_TYPE.SEARCH_ACTIVITES);
 }
 
 export function fetchActivite(modulesManager, params) {
@@ -592,8 +629,8 @@ export function fetchFundingSources(modulesManager, params) {
 
 // --- Funding allocation ---
 
+// allocateFunding upserts on (sousActivite, fundingSource): the input has no id.
 const formatAllocateFundingGQL = (allocation) => `
-  ${allocation?.id ? `id: "${allocation.id}"` : ''}
   ${allocation?.sousActiviteId ? `sousActiviteId: "${allocation.sousActiviteId}"` : ''}
   ${allocation?.fundingSourceId ? `fundingSourceId: "${allocation.fundingSourceId}"` : ''}
   ${allocation?.amount != null ? `amount: "${allocation.amount}"` : ''}
@@ -630,7 +667,7 @@ const TRANSITION_HISTORY_PROJECTION = () => [
   'toStatus',
   'transitionedAt',
   'comment',
-  'transitionedBy { username lastName firstName }',
+  'transitionedBy { username lastName otherNames }',
 ];
 
 export function fetchTransitionHistory(modulesManager, params) {
@@ -658,17 +695,17 @@ const QUARTERLY_EXECUTION_PROJECTION = () => [
   'tauxRealisation',
   'observations',
   'reportedDate',
-  'reportedBy { username lastName firstName }',
+  'reportedBy { username lastName otherNames }',
   'sousActivite { id code name }',
 ];
 
 export function fetchQuarterlyExecutions(modulesManager, params) {
-  const payload = formatPageQueryWithCount(
+  return fetchAllPages(
     'quarterlyExecution',
     params,
     QUARTERLY_EXECUTION_PROJECTION(),
+    ACTION_TYPE.GET_QUARTERLY_EXECUTIONS,
   );
-  return graphql(payload, ACTION_TYPE.GET_QUARTERLY_EXECUTIONS);
 }
 
 export function reportQuarterlyExecution(data, clientMutationLabel) {
@@ -701,7 +738,7 @@ export function fetchPtbaDashboard(modulesManager, params) {
     'tauxRealisation',
     'activitiesByStatus { status count }',
     'fundingBreakdown { sourceCode sourceName amount percentage }',
-    'composantePerformance { composanteId composanteCode composanteName budgetPrevu budgetDecaisse tauxDecaissement tauxRealisation }',
+    'composantePerformance { composanteId composanteCode composanteName budgetPrevu budgetEngage budgetDecaisse tauxEngagement tauxDecaissement tauxRealisation quarterly { quarter tauxRealisation } }',
     'quarterlyTrend { quarter tauxEngagement tauxDecaissement tauxRealisation }',
     'topDelayedActivities { activiteId activiteName composanteName tauxRealisation }',
     'alerts { activiteId activiteName message severity }',
@@ -740,8 +777,7 @@ export function unlinkActivityFromIndicator(activiteId, indicatorId, clientMutat
 // --- Weekly Plan actions ---
 
 export function fetchWeeklyPlanEntries(modulesManager, params) {
-  const payload = formatPageQueryWithCount('weeklyPlanEntry', params, WEEKLY_PLAN_PROJECTION());
-  return graphql(payload, ACTION_TYPE.GET_WEEKLY_PLAN_ENTRIES);
+  return fetchAllPages('weeklyPlanEntry', params, WEEKLY_PLAN_PROJECTION(), ACTION_TYPE.GET_WEEKLY_PLAN_ENTRIES);
 }
 
 const formatWeeklyPlanEntryGQL = (entry) => `
@@ -866,12 +902,12 @@ const CALENDAR_ACTIVITY_PROJECTION = () => [
 ];
 
 export function fetchCalendarActivities(modulesManager, params) {
-  const payload = formatPageQueryWithCount(
+  return fetchAllPages(
     'sousActivite',
     params,
     CALENDAR_ACTIVITY_PROJECTION(),
+    ACTION_TYPE.GET_CALENDAR_ACTIVITIES,
   );
-  return graphql(payload, ACTION_TYPE.GET_CALENDAR_ACTIVITIES);
 }
 
 // --- PTBA Transition ---

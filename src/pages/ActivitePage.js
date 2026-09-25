@@ -43,9 +43,10 @@ import {
 import { ACTION_TYPE } from '../actions';
 import {
   MODULE_NAME,
-  RIGHT_ACTIVITY_UPDATE,
   ROUTE_PTBA,
 } from '../constants';
+import { activityPermissions } from '../utils/permissions';
+import { useOwnedConfirm } from '../utils/useOwnedConfirm';
 import SousActiviteTable from '../components/hierarchy/SousActiviteTable';
 import FundingAllocationTable from '../components/funding/FundingAllocationTable';
 import StatusBadge from '../components/lifecycle/StatusBadge';
@@ -104,6 +105,7 @@ function ActivitePage({
   rights,
   submittingMutation,
   mutation,
+  confirm,
   confirmed,
   coreConfirm,
   clearConfirm,
@@ -116,7 +118,7 @@ function ActivitePage({
   const [tabValue, setTabValue] = useState(0);
   const [editMode, setEditMode] = useState(false);
   const [editData, setEditData] = useState({});
-  const [confirmedAction, setConfirmedAction] = useState(() => null);
+  const askConfirm = useOwnedConfirm(confirm, confirmed, coreConfirm, clearConfirm);
   const prevSubmittingMutationRef = useRef();
 
   useEffect(() => {
@@ -147,11 +149,6 @@ function ActivitePage({
     prevSubmittingMutationRef.current = submittingMutation;
   });
 
-  useEffect(() => {
-    if (confirmed && confirmedAction) confirmedAction();
-    return () => confirmed && clearConfirm(null);
-  }, [confirmed]);
-
   if (!activiteId) {
     return (
       <div className={classes.page}>
@@ -160,8 +157,7 @@ function ActivitePage({
     );
   }
 
-  const readOnly = !rights.includes(RIGHT_ACTIVITY_UPDATE)
-    || activite?.status === 'CLOTURE';
+  const permissions = activityPermissions(rights, activite);
 
   const sousActivites = activite?.sousActivites?.edges?.map((e) => e.node) || [];
 
@@ -209,15 +205,15 @@ function ActivitePage({
 
   // Delete
   const handleDelete = () => {
-    setConfirmedAction(() => () => {
-      deleteActivite(
-        activite,
-        formatMessageWithValues('activite.mutation.deleteLabel', { id: activite.id }),
-      );
-    });
-    coreConfirm(
+    askConfirm(
       formatMessage('activite.delete.confirm.title'),
       formatMessage('activite.delete.confirm.message'),
+      () => {
+        deleteActivite(
+          activite,
+          formatMessageWithValues('activite.mutation.deleteLabel', { id: activite.id }),
+        );
+      },
     );
   };
 
@@ -292,15 +288,15 @@ function ActivitePage({
               {activite?.code ? `${activite.code} - ` : ''}{activite?.name || ''}
             </Typography>
           )}
-          {!readOnly && !editMode && (
-            <>
-              <IconButton size="small" onClick={handleStartEdit}>
-                <EditIcon />
-              </IconButton>
-              <IconButton size="small" onClick={handleDelete}>
-                <DeleteIcon />
-              </IconButton>
-            </>
+          {permissions.canEdit && !editMode && (
+            <IconButton size="small" onClick={handleStartEdit}>
+              <EditIcon />
+            </IconButton>
+          )}
+          {permissions.canDelete && !editMode && (
+            <IconButton size="small" onClick={handleDelete}>
+              <DeleteIcon />
+            </IconButton>
           )}
           {editMode && (
             <>
@@ -399,7 +395,7 @@ function ActivitePage({
             <SousActiviteTable
               activiteId={activiteId}
               sousActivites={sousActivites}
-              readOnly={readOnly}
+              permissions={permissions}
             />
           </TabPanel>
 
@@ -407,7 +403,7 @@ function ActivitePage({
             <QuarterlyExecutionForm
               activiteId={activiteId}
               sousActivites={sousActivites}
-              readOnly={readOnly || activite?.status !== 'EN_COURS'}
+              readOnly={!permissions.canReportExecution}
             />
           </TabPanel>
 
@@ -423,7 +419,7 @@ function ActivitePage({
                     sousActiviteId={sa.id}
                     allocations={saAllocations}
                     budgetTotal={sa.budgetTotal}
-                    readOnly={readOnly}
+                    readOnly={!permissions.canManageFunding}
                   />
                 </div>
               );
@@ -434,7 +430,7 @@ function ActivitePage({
             <IndicatorLinkPanel
               activiteId={activiteId}
               indicators={indicators}
-              readOnly={readOnly}
+              readOnly={!permissions.canLinkIndicators}
             />
           </TabPanel>
 
@@ -446,7 +442,7 @@ function ActivitePage({
             <WeeklyPlanTab
               activiteId={activiteId}
               sousActivites={sousActivites}
-              readOnly={readOnly}
+              permissions={permissions}
             />
           </TabPanel>
         </div>
@@ -462,6 +458,7 @@ const mapStateToProps = (state, props) => ({
   fetchingActivite: state.activity.fetchingActivite,
   submittingMutation: state.activity.submittingMutation,
   mutation: state.activity.mutation,
+  confirm: state.core.confirm,
   confirmed: state.core.confirmed,
 });
 

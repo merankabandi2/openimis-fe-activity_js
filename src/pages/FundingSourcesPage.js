@@ -42,6 +42,7 @@ import {
   MODULE_NAME,
   RIGHT_FUNDING_MANAGE,
 } from '../constants';
+import { useOwnedConfirm } from '../utils/useOwnedConfirm';
 
 const useStyles = makeStyles((theme) => ({
   page: theme.page,
@@ -82,6 +83,7 @@ function FundingSourcesPage({
   createFundingSource,
   updateFundingSource,
   deleteFundingSource,
+  confirm,
   confirmed,
   coreConfirm,
   clearConfirm,
@@ -94,7 +96,7 @@ function FundingSourcesPage({
   const [editingData, setEditingData] = useState({});
   const [addingNew, setAddingNew] = useState(false);
   const [newSource, setNewSource] = useState({ ...EMPTY_SOURCE });
-  const [confirmedAction, setConfirmedAction] = useState(() => null);
+  const askConfirm = useOwnedConfirm(confirm, confirmed, coreConfirm, clearConfirm);
   const prevSubmittingRef = useRef();
 
   useEffect(() => {
@@ -114,11 +116,6 @@ function FundingSourcesPage({
   useEffect(() => {
     prevSubmittingRef.current = submittingMutation;
   });
-
-  useEffect(() => {
-    if (confirmed && confirmedAction) confirmedAction();
-    return () => confirmed && clearConfirm(null);
-  }, [confirmed]);
 
   const canManage = rights.includes(RIGHT_FUNDING_MANAGE);
 
@@ -140,15 +137,15 @@ function FundingSourcesPage({
   };
 
   const handleDelete = (fs) => {
-    setConfirmedAction(() => () => {
-      deleteFundingSource(
-        fs,
-        formatMessageWithValues('fundingSource.mutation.deleteLabel', { id: fs.id }),
-      );
-    });
-    coreConfirm(
+    askConfirm(
       formatMessage('fundingSource.delete.confirm.title'),
       formatMessage('fundingSource.delete.confirm.message'),
+      () => {
+        deleteFundingSource(
+          fs,
+          formatMessageWithValues('fundingSource.mutation.deleteLabel', { id: fs.id }),
+        );
+      },
     );
   };
 
@@ -340,6 +337,7 @@ const mapStateToProps = (state) => ({
   fetchingFundingSources: state.activity.fetchingFundingSources,
   submittingMutation: state.activity.submittingMutation,
   mutation: state.activity.mutation,
+  confirm: state.core.confirm,
   confirmed: state.core.confirmed,
 });
 
