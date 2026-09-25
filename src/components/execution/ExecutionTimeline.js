@@ -11,6 +11,7 @@ import RadioButtonUncheckedIcon from '@material-ui/icons/RadioButtonUnchecked';
 import HourglassEmptyIcon from '@material-ui/icons/HourglassEmpty';
 import { useModulesManager, useTranslations } from '@openimis/fe-core';
 import { MODULE_NAME, QUARTERS } from '../../constants';
+import { quarterNumber } from '../../utils/gql-values';
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -54,7 +55,7 @@ function ExecutionTimeline({ executions, currentQuarter }) {
 
   const getQuarterExecution = (quarterNum) => {
     if (!executions) return null;
-    return executions.find((e) => e.quarter === quarterNum);
+    return executions.find((e) => quarterNumber(e.quarter) === quarterNum);
   };
 
   const getQuarterStatus = (quarterNum) => {

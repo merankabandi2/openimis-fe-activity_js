@@ -69,7 +69,7 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-function ActiviteCard({ activite, readOnly, onClick }) {
+function ActiviteCard({ activite, onClick }) {
   const modulesManager = useModulesManager();
   const classes = useStyles();
   const { formatMessage } = useTranslations(MODULE_NAME, modulesManager);

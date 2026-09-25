@@ -28,6 +28,7 @@ import {
   ROUTE_ACTIVITE,
 } from '../constants';
 import { fetchPtbas, fetchCalendarActivities } from '../actions';
+import { fiscalWindow } from '../utils/calendar-window';
 import CalendarToolbar from '../components/calendar/CalendarToolbar';
 import CalendarFilterDrawer from '../components/calendar/CalendarFilterDrawer';
 import CalendarTimelineView from '../components/calendar/CalendarTimelineView';
@@ -104,6 +105,7 @@ function ActivityCalendarPage({
   ptbas,
   calendarActivities,
   fetchingCalendarActivities,
+  errorCalendarActivities,
   fetchPtbas,
   fetchCalendarActivities,
 }) {
@@ -127,14 +129,10 @@ function ActivityCalendarPage({
     fetchPtbas(modulesManager, ['first: 50']);
   }, []);
 
-  // Auto-select first PTBA and jump calendar to its fiscal year
+  // Auto-select the first PTBA
   useEffect(() => {
     if (ptbas && ptbas.length > 0 && !filters.ptbaId) {
       setFilters((prev) => ({ ...prev, ptbaId: ptbas[0].id }));
-      // Jump calendar to the PTBA's fiscal year start so activities are visible
-      if (ptbas[0].fiscalYearStart) {
-        setCurrentDate(new Date(ptbas[0].fiscalYearStart));
-      }
     }
   }, [ptbas]);
 
@@ -142,7 +140,6 @@ function ActivityCalendarPage({
   useEffect(() => {
     if (filters.ptbaId) {
       const params = [
-        `first: 500`,
         `activite_SousComposante_Composante_Ptba_Id: "${filters.ptbaId}"`,
       ];
       fetchCalendarActivities(modulesManager, params);
@@ -154,6 +151,13 @@ function ActivityCalendarPage({
     () => (ptbas || []).find((p) => p.id === filters.ptbaId),
     [ptbas, filters.ptbaId],
   );
+
+  // Every PTBA selection jumps the calendar to that PTBA's fiscal year
+  useEffect(() => {
+    if (selectedPtba?.fiscalYearStart) {
+      setCurrentDate(new Date(selectedPtba.fiscalYearStart));
+    }
+  }, [selectedPtba?.id]);
 
   // Derive composantes and responsibles from loaded data
   const { composantes, sousComposantes, responsibles } = useMemo(() => {
@@ -389,20 +393,20 @@ function ActivityCalendarPage({
     }
   }, [filteredActivities, groupBy, formatMessage]);
 
-  // Timeline range: use PTBA fiscal year or default to current year
-  const timelineStart = useMemo(() => {
-    if (selectedPtba?.fiscalYearStart) {
-      return new Date(selectedPtba.fiscalYearStart);
+  // Timeline range: the PTBA fiscal-year span containing currentDate, or the
+  // calendar year of currentDate when no PTBA is selected
+  const timelineWindow = useMemo(() => {
+    if (selectedPtba?.fiscalYearStart && selectedPtba?.fiscalYearEnd) {
+      return fiscalWindow(selectedPtba.fiscalYearStart, selectedPtba.fiscalYearEnd, currentDate);
     }
-    return new Date(currentDate.getFullYear(), 0, 1);
+    return {
+      start: new Date(currentDate.getFullYear(), 0, 1),
+      end: new Date(currentDate.getFullYear(), 11, 31),
+      offset: null,
+    };
   }, [selectedPtba, currentDate]);
-
-  const timelineEnd = useMemo(() => {
-    if (selectedPtba?.fiscalYearEnd) {
-      return new Date(selectedPtba.fiscalYearEnd);
-    }
-    return new Date(currentDate.getFullYear(), 11, 31);
-  }, [selectedPtba, currentDate]);
+  const timelineStart = timelineWindow.start;
+  const timelineEnd = timelineWindow.end;
 
   // Period label for navigation
   const periodLabel = useMemo(() => {
@@ -417,12 +421,16 @@ function ActivityCalendarPage({
       }
       case CALENDAR_VIEW.TIMELINE:
       default:
-        if (selectedPtba) {
+        if (selectedPtba && timelineWindow.offset === 0) {
           return `${selectedPtba.code || selectedPtba.name}`;
+        }
+        if (selectedPtba) {
+          const fmt = { month: 'short', year: 'numeric' };
+          return `${timelineStart.toLocaleDateString('fr-FR', fmt)} - ${timelineEnd.toLocaleDateString('fr-FR', fmt)}`;
         }
         return currentDate.getFullYear().toString();
     }
-  }, [view, currentDate, selectedPtba]);
+  }, [view, currentDate, selectedPtba, timelineWindow]);
 
   // Navigation handlers
   const handlePrev = () => {
@@ -546,11 +554,20 @@ function ActivityCalendarPage({
 
         <CalendarLegend colorBy={colorBy} colorMap={legendColorMap} />
 
-        {fetchingCalendarActivities ? (
+        {fetchingCalendarActivities && (
           <Box className={classes.loadingContainer}>
             <CircularProgress />
           </Box>
-        ) : (
+        )}
+        {!fetchingCalendarActivities && errorCalendarActivities && (
+          <Box className={classes.loadingContainer}>
+            <Typography color="error">
+              {formatMessage('calendar.loadError')}
+              {errorCalendarActivities.detail ? ` : ${errorCalendarActivities.detail}` : ''}
+            </Typography>
+          </Box>
+        )}
+        {!fetchingCalendarActivities && !errorCalendarActivities && (
           <>
             {view === CALENDAR_VIEW.TIMELINE && (
               <CalendarTimelineView
@@ -590,6 +607,7 @@ const mapStateToProps = (state) => ({
   ptbas: state.activity.ptbas,
   calendarActivities: state.activity.calendarActivities,
   fetchingCalendarActivities: state.activity.fetchingCalendarActivities,
+  errorCalendarActivities: state.activity.errorCalendarActivities,
 });
 
 const mapDispatchToProps = (dispatch) => bindActionCreators({

@@ -4,12 +4,12 @@ import {
   pageInfo,
   formatGraphQLError,
   formatServerError,
-  decodeId,
   dispatchMutationReq,
   dispatchMutationResp,
   dispatchMutationErr,
 } from '@openimis/fe-core';
 import { ACTION_TYPE, MUTATION_SERVICE } from './actions';
+import { decodeNestedIds } from './utils/relay';
 
 const REQUEST = (actionType) => `${actionType}_REQ`;
 const SUCCESS = (actionType) => `${actionType}_RESP`;
@@ -145,10 +145,7 @@ function reducer(state = STORE_STATE, action) {
         ...state,
         fetchingPtbas: false,
         fetchedPtbas: true,
-        ptbas: parseData(action.payload.data.ptba)?.map((p) => ({
-          ...p,
-          id: decodeId(p.id),
-        })),
+        ptbas: parseData(action.payload.data.ptba)?.map(decodeNestedIds),
         ptbasPageInfo: pageInfo(action.payload.data.ptba),
         ptbasTotalCount: action.payload.data.ptba?.totalCount ?? 0,
         errorPtbas: formatGraphQLError(action.payload),
@@ -176,7 +173,7 @@ function reducer(state = STORE_STATE, action) {
         fetchingPtba: false,
         fetchedPtba: true,
         ptba: ptbas?.length > 0
-          ? { ...ptbas[0], id: decodeId(ptbas[0].id) }
+          ? decodeNestedIds(ptbas[0])
           : null,
         errorPtba: formatGraphQLError(action.payload),
       };
@@ -212,10 +209,7 @@ function reducer(state = STORE_STATE, action) {
         ...state,
         fetchingComposantes: false,
         fetchedComposantes: true,
-        composantes: parseData(action.payload.data.composante)?.map((c) => ({
-          ...c,
-          id: decodeId(c.id),
-        })),
+        composantes: parseData(action.payload.data.composante)?.map(decodeNestedIds),
         composantesPageInfo: pageInfo(action.payload.data.composante),
         composantesTotalCount: action.payload.data.composante?.totalCount ?? 0,
         errorComposantes: formatGraphQLError(action.payload),
@@ -243,10 +237,7 @@ function reducer(state = STORE_STATE, action) {
         ...state,
         fetchingSousComposantes: false,
         fetchedSousComposantes: true,
-        sousComposantes: parseData(action.payload.data.sousComposante)?.map((sc) => ({
-          ...sc,
-          id: decodeId(sc.id),
-        })),
+        sousComposantes: parseData(action.payload.data.sousComposante)?.map(decodeNestedIds),
         sousComposantesPageInfo: pageInfo(action.payload.data.sousComposante),
         sousComposantesTotalCount: action.payload.data.sousComposante?.totalCount ?? 0,
         errorSousComposantes: formatGraphQLError(action.payload),
@@ -274,10 +265,7 @@ function reducer(state = STORE_STATE, action) {
         ...state,
         fetchingActivites: false,
         fetchedActivites: true,
-        activites: parseData(action.payload.data.activite)?.map((a) => ({
-          ...a,
-          id: decodeId(a.id),
-        })),
+        activites: parseData(action.payload.data.activite)?.map(decodeNestedIds),
         activitesPageInfo: pageInfo(action.payload.data.activite),
         activitesTotalCount: action.payload.data.activite?.totalCount ?? 0,
         errorActivites: formatGraphQLError(action.payload),
@@ -305,7 +293,7 @@ function reducer(state = STORE_STATE, action) {
         fetchingActivite: false,
         fetchedActivite: true,
         activite: activites?.length > 0
-          ? { ...activites[0], id: decodeId(activites[0].id) }
+          ? decodeNestedIds(activites[0])
           : null,
         errorActivite: formatGraphQLError(action.payload),
       };
@@ -341,10 +329,7 @@ function reducer(state = STORE_STATE, action) {
         ...state,
         fetchingSousActivites: false,
         fetchedSousActivites: true,
-        sousActivites: parseData(action.payload.data.sousActivite)?.map((sa) => ({
-          ...sa,
-          id: decodeId(sa.id),
-        })),
+        sousActivites: parseData(action.payload.data.sousActivite)?.map(decodeNestedIds),
         sousActivitesPageInfo: pageInfo(action.payload.data.sousActivite),
         sousActivitesTotalCount: action.payload.data.sousActivite?.totalCount ?? 0,
         errorSousActivites: formatGraphQLError(action.payload),
@@ -372,10 +357,7 @@ function reducer(state = STORE_STATE, action) {
         ...state,
         fetchingFundingSources: false,
         fetchedFundingSources: true,
-        fundingSources: parseData(action.payload.data.fundingSource)?.map((fs) => ({
-          ...fs,
-          id: decodeId(fs.id),
-        })),
+        fundingSources: parseData(action.payload.data.fundingSource)?.map(decodeNestedIds),
         fundingSourcesPageInfo: pageInfo(action.payload.data.fundingSource),
         fundingSourcesTotalCount: action.payload.data.fundingSource?.totalCount ?? 0,
         errorFundingSources: formatGraphQLError(action.payload),
@@ -491,10 +473,7 @@ function reducer(state = STORE_STATE, action) {
         ...state,
         fetchingTransitionHistory: false,
         fetchedTransitionHistory: true,
-        transitionHistory: parseData(action.payload.data.activityStatusTransition)?.map((t) => ({
-          ...t,
-          id: decodeId(t.id),
-        })) || [],
+        transitionHistory: parseData(action.payload.data.activityStatusTransition)?.map(decodeNestedIds) || [],
         transitionHistoryPageInfo: pageInfo(action.payload.data.activityStatusTransition),
         transitionHistoryTotalCount: action.payload.data.activityStatusTransition?.totalCount ?? 0,
         errorTransitionHistory: formatGraphQLError(action.payload),
@@ -522,10 +501,7 @@ function reducer(state = STORE_STATE, action) {
         ...state,
         fetchingQuarterlyExecutions: false,
         fetchedQuarterlyExecutions: true,
-        quarterlyExecutions: parseData(action.payload.data.quarterlyExecution)?.map((qe) => ({
-          ...qe,
-          id: decodeId(qe.id),
-        })) || [],
+        quarterlyExecutions: parseData(action.payload.data.quarterlyExecution)?.map(decodeNestedIds) || [],
         quarterlyExecutionsPageInfo: pageInfo(action.payload.data.quarterlyExecution),
         quarterlyExecutionsTotalCount: action.payload.data.quarterlyExecution?.totalCount ?? 0,
         errorQuarterlyExecutions: formatGraphQLError(action.payload),
@@ -605,10 +581,7 @@ function reducer(state = STORE_STATE, action) {
         ...state,
         fetchingWeeklyPlan: false,
         fetchedWeeklyPlan: true,
-        weeklyPlanEntries: parseData(action.payload.data.weeklyPlanEntry)?.map((e) => ({
-          ...e,
-          id: decodeId(e.id),
-        })) || [],
+        weeklyPlanEntries: parseData(action.payload.data.weeklyPlanEntry)?.map(decodeNestedIds) || [],
         weeklyPlanPageInfo: pageInfo(action.payload.data.weeklyPlanEntry),
         weeklyPlanTotalCount: action.payload.data.weeklyPlanEntry?.totalCount ?? 0,
         errorWeeklyPlan: formatGraphQLError(action.payload),
@@ -676,10 +649,7 @@ function reducer(state = STORE_STATE, action) {
         ...state,
         fetchingIndicators: false,
         fetchedIndicators: true,
-        indicators: parseData(action.payload.data.indicator)?.map((i) => ({
-          ...i,
-          id: decodeId(i.id),
-        })) || [],
+        indicators: parseData(action.payload.data.indicator)?.map(decodeNestedIds) || [],
         indicatorsPageInfo: pageInfo(action.payload.data.indicator),
         indicatorsTotalCount: action.payload.data.indicator?.totalCount ?? 0,
         errorIndicators: formatGraphQLError(action.payload),
@@ -743,14 +713,7 @@ function reducer(state = STORE_STATE, action) {
         ...state,
         fetchingCalendarActivities: false,
         fetchedCalendarActivities: true,
-        calendarActivities: parseData(action.payload.data.sousActivite)?.map((sa) => ({
-          ...sa,
-          id: decodeId(sa.id),
-          activite: sa.activite ? {
-            ...sa.activite,
-            id: decodeId(sa.activite.id),
-          } : null,
-        })) || [],
+        calendarActivities: parseData(action.payload.data.sousActivite)?.map(decodeNestedIds) || [],
         calendarActivitiesPageInfo: pageInfo(action.payload.data.sousActivite),
         calendarActivitiesTotalCount: action.payload.data.sousActivite?.totalCount ?? 0,
         errorCalendarActivities: formatGraphQLError(action.payload),

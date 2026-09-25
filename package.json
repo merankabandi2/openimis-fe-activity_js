@@ -12,6 +12,7 @@
   "scripts": {
     "build": "rollup -c",
     "start": "rollup -c -w",
+    "test": "node --import ./test/support/register.mjs --test test/*.test.mjs",
     "prepare": "npm run build"
   },
   "peerDependency": {

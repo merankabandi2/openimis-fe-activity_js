@@ -28,6 +28,7 @@ import {
   journalize,
 } from '@openimis/fe-core';
 import { MODULE_NAME } from '../../constants';
+import { currentIndicatorValue } from '../../utils/indicators';
 import {
   linkActivityToIndicator,
   unlinkActivityFromIndicator,
@@ -136,7 +137,7 @@ function IndicatorLinkPanel({
   const computeProgress = (indicator) => {
     const baseline = parseFloat(indicator.baseline) || 0;
     const target = parseFloat(indicator.target) || 0;
-    const current = parseFloat(indicator.currentValue) || 0;
+    const current = currentIndicatorValue(indicator);
     if (target <= baseline) return 0;
     const progress = ((current - baseline) / (target - baseline)) * 100;
     return Math.min(Math.max(progress, 0), 100);
@@ -243,7 +244,7 @@ function IndicatorLinkPanel({
                       {' | '}
                       {formatMessage('indicator.target')}: {indicator.target || 0}
                       {' | '}
-                      {formatMessage('indicator.current')}: {indicator.currentValue || 0}
+                      {formatMessage('indicator.current')}: {currentIndicatorValue(indicator)}
                     </Typography>
                     <div className={classes.progressContainer}>
                       <LinearProgress

@@ -32,7 +32,14 @@ import {
   reportQuarterlyExecution,
 } from '../../actions';
 import { formatBIFAmount } from '../../utils/string-utils';
+import {
+  executionYearFilters,
+  executionsOfQuarter,
+  quarterSummaries,
+  quarterOf,
+} from '../../utils/execution';
 import ExecutionProgressBar from './ExecutionProgressBar';
+import ExecutionTimeline from './ExecutionTimeline';
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -97,19 +104,20 @@ function QuarterlyExecutionForm({
   const [formData, setFormData] = useState({});
 
   useEffect(() => {
-    if (activiteId && selectedQuarter && selectedYear) {
-      fetchQuarterlyExecutions(modulesManager, [
-        `sousActivite_Activite_Id: "${activiteId}"`,
-        `quarter: ${selectedQuarter}`,
-        `year: ${selectedYear}`,
-      ]);
+    if (activiteId && selectedYear) {
+      fetchQuarterlyExecutions(modulesManager, executionYearFilters(activiteId, selectedYear));
     }
-  }, [activiteId, selectedQuarter, selectedYear]);
+  }, [activiteId, selectedYear]);
+
+  const timeline = useMemo(() => quarterSummaries(quarterlyExecutions), [quarterlyExecutions]);
+  const today = new Date();
+  const currentQuarter = selectedYear === today.getFullYear() ? quarterOf(today) : null;
 
   useEffect(() => {
     const newFormData = {};
-    if (quarterlyExecutions && quarterlyExecutions.length > 0) {
-      quarterlyExecutions.forEach((exec) => {
+    const quarterExecutions = executionsOfQuarter(quarterlyExecutions, selectedQuarter);
+    if (quarterExecutions.length > 0) {
+      quarterExecutions.forEach((exec) => {
         const saId = exec.sousActivite?.id;
         if (saId) {
           newFormData[saId] = {
@@ -122,7 +130,7 @@ function QuarterlyExecutionForm({
       });
     }
     setFormData(newFormData);
-  }, [quarterlyExecutions]);
+  }, [quarterlyExecutions, selectedQuarter]);
 
   const handleFieldChange = (saId, field, value) => {
     setFormData((prev) => ({
@@ -232,6 +240,8 @@ function QuarterlyExecutionForm({
           </Select>
         </FormControl>
       </div>
+
+      <ExecutionTimeline executions={timeline} currentQuarter={currentQuarter} />
 
       <div className={classes.progressSection}>
         <Typography variant="subtitle2" gutterBottom>

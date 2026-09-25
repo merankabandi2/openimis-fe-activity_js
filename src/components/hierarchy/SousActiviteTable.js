@@ -20,12 +20,15 @@ import SaveIcon from '@material-ui/icons/Save';
 import DeleteIcon from '@material-ui/icons/Delete';
 import EditIcon from '@material-ui/icons/Edit';
 import CheckCircleIcon from '@material-ui/icons/CheckCircle';
+import CancelIcon from '@material-ui/icons/Cancel';
 import { makeStyles } from '@material-ui/styles';
 
 import {
   useModulesManager,
   useTranslations,
   journalize,
+  coreConfirm,
+  clearConfirm,
 } from '@openimis/fe-core';
 import {
   createSousActivite,
@@ -33,9 +36,12 @@ import {
   deleteSousActivite,
   beginRevision,
   approveRevision,
+  rejectRevision,
 } from '../../actions';
 import { MODULE_NAME } from '../../constants';
 import { formatBIFAmount } from '../../utils/string-utils';
+import { useOwnedConfirm } from '../../utils/useOwnedConfirm';
+import { displayedBudgets, sousActiviteUpdatePayload } from '../../utils/sous-activite';
 import RevisionStatusBadge from '../lifecycle/RevisionStatusBadge';
 
 const useStyles = makeStyles((theme) => ({
@@ -108,12 +114,17 @@ const EMPTY_ROW = {
 function SousActiviteTable({
   activiteId,
   sousActivites,
-  readOnly,
+  permissions,
+  confirm,
+  confirmed,
   createSousActivite,
   updateSousActivite,
   deleteSousActivite,
   beginRevision,
   approveRevision,
+  rejectRevision,
+  coreConfirm,
+  clearConfirm,
 }) {
   const modulesManager = useModulesManager();
   const classes = useStyles();
@@ -121,6 +132,17 @@ function SousActiviteTable({
 
   const [rows, setRows] = useState([]);
   const [editingRowId, setEditingRowId] = useState(null);
+  const askConfirm = useOwnedConfirm(confirm, confirmed, coreConfirm, clearConfirm);
+
+  const canCreate = !!permissions?.canCreateSousActivite;
+  const canUpdate = !!permissions?.canUpdateSousActivite;
+  const canDelete = !!permissions?.canDeleteSousActivite;
+  const canBeginRevision = !!permissions?.canBeginRevision;
+  const canDecideRevision = !!permissions?.canDecideRevision;
+  const readOnly = !(canCreate || canUpdate || canDelete || canBeginRevision || canDecideRevision);
+  const originals = {};
+  (sousActivites || []).forEach((sa) => { originals[sa.id] = sa; });
+  const canEditRow = (row) => (row._isNew ? canCreate : canUpdate);
 
   useEffect(() => {
     const sorted = [...(sousActivites || [])].sort(
@@ -128,15 +150,6 @@ function SousActiviteTable({
     );
     setRows(sorted);
   }, [sousActivites]);
-
-  const computeRowTotal = (row) => {
-    const uc = parseFloat(row.unitCost) || 0;
-    const t1 = (parseFloat(row.quantityT1) || 0) * uc;
-    const t2 = (parseFloat(row.quantityT2) || 0) * uc;
-    const t3 = (parseFloat(row.quantityT3) || 0) * uc;
-    const t4 = (parseFloat(row.quantityT4) || 0) * uc;
-    return t1 + t2 + t3 + t4;
-  };
 
   const handleCellChange = (rowIndex, field, value) => {
     const newRows = [...rows];
@@ -156,6 +169,14 @@ function SousActiviteTable({
   };
 
   const handleSaveRow = (row, rowIndex) => {
+    if (!row._isNew) {
+      updateSousActivite(
+        sousActiviteUpdatePayload(row, originals[row.id]),
+        formatMessageWithValues('sousActivite.mutation.updateLabel', { id: row.id }),
+      );
+      setEditingRowId(null);
+      return;
+    }
     const uc = parseFloat(row.unitCost) || 0;
     const q1 = parseFloat(row.quantityT1) || 0;
     const q2 = parseFloat(row.quantityT2) || 0;
@@ -179,17 +200,10 @@ function SousActiviteTable({
       sortOrder: rowIndex,
     };
 
-    if (row._isNew) {
-      createSousActivite(
-        sousActiviteData,
-        formatMessage('sousActivite.mutation.createLabel'),
-      );
-    } else {
-      updateSousActivite(
-        sousActiviteData,
-        formatMessageWithValues('sousActivite.mutation.updateLabel', { id: row.id }),
-      );
-    }
+    createSousActivite(
+      sousActiviteData,
+      formatMessage('sousActivite.mutation.createLabel'),
+    );
     setEditingRowId(null);
   };
 
@@ -197,9 +211,13 @@ function SousActiviteTable({
     if (row._isNew) {
       setRows(rows.filter((r) => r._tempId !== row._tempId));
     } else {
-      deleteSousActivite(
-        row,
-        formatMessageWithValues('sousActivite.mutation.deleteLabel', { id: row.id }),
+      askConfirm(
+        formatMessage('sousActivite.delete.confirm.title'),
+        formatMessage('sousActivite.delete.confirm.message'),
+        () => deleteSousActivite(
+          row,
+          formatMessageWithValues('sousActivite.mutation.deleteLabel', { id: row.id }),
+        ),
       );
     }
   };
@@ -219,7 +237,18 @@ function SousActiviteTable({
     );
   };
 
-  const grandTotal = rows.reduce((sum, row) => sum + computeRowTotal(row), 0);
+  const handleRejectRevision = (row) => {
+    rejectRevision(
+      row.id,
+      '',
+      formatMessageWithValues('revision.mutation.rejectLabel', { id: row.id }),
+    );
+  };
+
+  const grandTotal = rows.reduce(
+    (sum, row) => sum + displayedBudgets(row, originals[row.id]).budgetTotal,
+    0,
+  );
 
   const isEditing = (row) => {
     if (row._isNew) return editingRowId === row._tempId;
@@ -227,7 +256,7 @@ function SousActiviteTable({
   };
 
   const renderEditableCell = (row, rowIndex, field, type) => {
-    if (readOnly || !isEditing(row)) {
+    if (!canEditRow(row) || !isEditing(row)) {
       const val = row[field];
       if (type === 'number') {
         return <Typography variant="body2">{formatBIFAmount(val)}</Typography>;
@@ -295,23 +324,16 @@ function SousActiviteTable({
           </TableHead>
           <TableBody>
             {rows.map((row, idx) => {
-              const uc = parseFloat(row.unitCost) || 0;
-              const q1 = parseFloat(row.quantityT1) || 0;
-              const q2 = parseFloat(row.quantityT2) || 0;
-              const q3 = parseFloat(row.quantityT3) || 0;
-              const q4 = parseFloat(row.quantityT4) || 0;
-              const b1 = q1 * uc;
-              const b2 = q2 * uc;
-              const b3 = q3 * uc;
-              const b4 = q4 * uc;
-              const total = b1 + b2 + b3 + b4;
+              const {
+                budgetT1: b1, budgetT2: b2, budgetT3: b3, budgetT4: b4, budgetTotal: total,
+              } = displayedBudgets(row, originals[row.id]);
               const ecart = computeEcart(row);
 
               return (
                 <TableRow
                   key={row.id || row._tempId}
                   hover
-                  onClick={() => !readOnly && setEditingRowId(row.id || row._tempId)}
+                  onClick={() => canEditRow(row) && setEditingRowId(row.id || row._tempId)}
                 >
                   <TableCell className={classes.cell}>
                     {renderEditableCell(row, idx, 'name', 'text')}
@@ -398,25 +420,34 @@ function SousActiviteTable({
                           </IconButton>
                         </Tooltip>
                       )}
-                      {!row._isNew && row.revisionStatus !== 'REVISE' && (
+                      {!row._isNew && canBeginRevision && row.revisionStatus !== 'REVISE' && (
                         <Tooltip title={formatMessage('revision.begin')}>
                           <IconButton size="small" onClick={() => handleBeginRevision(row)}>
                             <EditIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
                       )}
-                      {!row._isNew && row.revisionStatus === 'REVISE' && (
+                      {!row._isNew && canDecideRevision && row.revisionStatus === 'REVISE' && (
                         <Tooltip title={formatMessage('revision.approve')}>
                           <IconButton size="small" onClick={() => handleApproveRevision(row)}>
                             <CheckCircleIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
                       )}
-                      <Tooltip title={formatMessage('tooltip.delete')}>
-                        <IconButton size="small" onClick={() => handleDeleteRow(row)}>
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
+                      {!row._isNew && canDecideRevision && row.revisionStatus === 'REVISE' && (
+                        <Tooltip title={formatMessage('revision.reject')}>
+                          <IconButton size="small" onClick={() => handleRejectRevision(row)}>
+                            <CancelIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      )}
+                      {(row._isNew || canDelete) && (
+                        <Tooltip title={formatMessage('tooltip.delete')}>
+                          <IconButton size="small" onClick={() => handleDeleteRow(row)}>
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      )}
                     </TableCell>
                   )}
                 </TableRow>
@@ -439,7 +470,7 @@ function SousActiviteTable({
           </TableBody>
         </Table>
       </TableContainer>
-      {!readOnly && (
+      {canCreate && (
         <Button
           size="small"
           startIcon={<AddIcon />}
@@ -453,13 +484,21 @@ function SousActiviteTable({
   );
 }
 
+const mapStateToProps = (state) => ({
+  confirm: state.core.confirm,
+  confirmed: state.core.confirmed,
+});
+
 const mapDispatchToProps = (dispatch) => bindActionCreators({
   createSousActivite,
   updateSousActivite,
   deleteSousActivite,
   beginRevision,
   approveRevision,
+  rejectRevision,
+  coreConfirm,
+  clearConfirm,
   journalize,
 }, dispatch);
 
-export default connect(null, mapDispatchToProps)(SousActiviteTable);
+export default connect(mapStateToProps, mapDispatchToProps)(SousActiviteTable);

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useSelector } from 'react-redux';
 
-import { Fab } from '@material-ui/core';
+import { Fab, Typography } from '@material-ui/core';
 import { makeStyles } from '@material-ui/styles';
 import AddIcon from '@material-ui/icons/Add';
 
@@ -38,7 +38,8 @@ function PTBAListPage() {
     <div className={classes.page}>
       <Helmet title={formatMessage('ptba.page.title')} />
       {rights.includes(RIGHT_PTBA_SEARCH)
-        && <PTBASearcher />}
+        ? <PTBASearcher />
+        : <Typography variant="h6">{formatMessage('error.insufficientPermissions')}</Typography>}
       {rights.includes(RIGHT_PTBA_CREATE)
         && withTooltip(
           <div className={classes.fab}>
