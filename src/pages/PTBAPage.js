@@ -38,14 +38,13 @@ import {
 } from '../actions';
 import {
   MODULE_NAME,
-  RIGHT_PTBA_CREATE,
-  RIGHT_PTBA_UPDATE,
   ROUTE_ACTIVITE,
   PTBA_VALID_TRANSITIONS,
   PTBA_STATUS,
 } from '../constants';
 import { ACTION_TYPE } from '../actions';
 import { mutationLabel, pageTitle } from '../utils/string-utils';
+import { ptbaPermissions, ptbaDatesValid } from '../utils/permissions';
 import PTBAForm from '../components/ptba/PTBAForm';
 import PTBAHeadPanel from '../components/ptba/PTBAHeadPanel';
 import ComposantePanel from '../components/hierarchy/ComposantePanel';
@@ -94,7 +93,9 @@ function PTBAPage({
   const [editedPtba, setEditedPtba] = useState({});
   const [confirmedAction, setConfirmedAction] = useState(() => null);
   const prevSubmittingMutationRef = useRef();
-  const pageLocked = editedPtba?.status === 'CLOSED';
+  const permissions = ptbaPermissions(rights, ptba, !ptbaId);
+  const pageLocked = permissions.locked;
+  const formReadOnly = !permissions.canSave;
 
   // Composante add dialog
   const [composanteDialogOpen, setComposanteDialogOpen] = useState(false);
@@ -145,7 +146,9 @@ function PTBAPage({
     return true;
   };
 
-  const canSave = () => !mandatoryFieldsEmpty();
+  const datesValid = ptbaDatesValid(editedPtba?.fiscalYearStart, editedPtba?.fiscalYearEnd);
+
+  const canSave = () => permissions.canSave && !mandatoryFieldsEmpty() && datesValid;
 
   const handleSave = () => {
     if (ptba?.id) {
@@ -223,18 +226,14 @@ function PTBAPage({
   };
 
   const actions = [
-    !!ptbaId && !pageLocked && {
+    permissions.canDelete && {
       doIt: openDeletePtbaConfirmDialog,
       icon: <DeleteIcon />,
       tooltip: formatMessage('tooltip.delete'),
     },
   ];
 
-  const canViewPage = ptbaId
-    ? rights.includes(RIGHT_PTBA_UPDATE)
-    : rights.includes(RIGHT_PTBA_CREATE);
-
-  if (!canViewPage) {
+  if (!permissions.canView) {
     return (
       <div className={classes.page}>
         <Typography variant="h6">{formatMessage('error.insufficientPermissions')}</Typography>
@@ -255,26 +254,31 @@ function PTBAPage({
           module="activity"
           title={formatMessageWithValues('PTBAPage.title', pageTitle(ptba))}
           titleParams={pageTitle(ptba)}
-          openDirty
+          openDirty={!formReadOnly}
           edited={editedPtba}
           onEditedChanged={setEditedPtba}
           back={back}
           mandatoryFieldsEmpty={mandatoryFieldsEmpty}
           canSave={canSave}
-          save={ptbaId ? handleSave : handleSave}
+          save={formReadOnly ? null : handleSave}
           HeadPanel={PTBAForm}
-          readOnly={pageLocked}
+          readOnly={formReadOnly}
           rights={rights}
           actions={actions}
           setConfirmedAction={setConfirmedAction}
           saveTooltip={formatMessage('tooltip.save')}
         />
+        {!datesValid && (
+          <Typography color="error" variant="body2">
+            {formatMessage('ptba.fiscalYearEnd.beforeStart')}
+          </Typography>
+        )}
         {ptbaId && ptba && (
           <div className={classes.hierarchyContainer}>
             <PTBAHeadPanel ptba={ptba} />
 
             {/* PTBA Status Transition Buttons */}
-            {!pageLocked && (
+            {permissions.canTransition && (
               <div className={classes.transitionBar}>
                 {ptba?.status === PTBA_STATUS.DRAFT && (
                   <Button
@@ -319,7 +323,7 @@ function PTBAPage({
             )}
 
             {/* Add Composante Button */}
-            {!pageLocked && (
+            {permissions.canAddComposante && (
               <Button
                 variant="outlined"
                 color="primary"
@@ -340,7 +344,7 @@ function PTBAPage({
                   key={composante.id}
                   composante={composante}
                   ptbaId={ptba.id}
-                  readOnly={pageLocked}
+                  permissions={permissions}
                   onActiviteClick={handleActiviteClick}
                 />
               ))}

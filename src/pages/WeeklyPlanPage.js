@@ -19,8 +19,6 @@ import {
   CircularProgress,
 } from '@material-ui/core';
 import AddIcon from '@material-ui/icons/Add';
-import EditIcon from '@material-ui/icons/Edit';
-import DeleteIcon from '@material-ui/icons/Delete';
 import { makeStyles } from '@material-ui/styles';
 
 import {
@@ -39,6 +37,7 @@ import {
   deleteWeeklyPlanEntry,
 } from '../actions';
 import { MODULE_NAME, RIGHT_ACTIVITY_SEARCH } from '../constants';
+import { activityPermissions } from '../utils/permissions';
 import WeeklyStatusBadge from '../components/lifecycle/WeeklyStatusBadge';
 import WeeklyPlanForm from '../components/weekly/WeeklyPlanForm';
 
@@ -185,6 +184,10 @@ function WeeklyPlanPage({
   fetchingActivite,
   weeklyPlanEntries,
   fetchingWeeklyPlan,
+  errorPtbas,
+  errorActivites,
+  errorActivite,
+  errorWeeklyPlan,
   submittingMutation,
   mutation,
   fetchPtbas,
@@ -213,14 +216,14 @@ function WeeklyPlanPage({
 
   useEffect(() => {
     if (selectedPtbaId) {
-      fetchActivites(modulesManager, [`sousComposante_Composante_Ptba_Id: "${selectedPtbaId}"`, 'first: 500']);
+      fetchActivites(modulesManager, [`sousComposante_Composante_Ptba_Id: "${selectedPtbaId}"`]);
     }
   }, [selectedPtbaId]);
 
   useEffect(() => {
     if (selectedActiviteId) {
       fetchActivite(modulesManager, [`id: "${selectedActiviteId}"`]);
-      fetchWeeklyPlanEntries(modulesManager, [`sousActivite_Activite_Id: "${selectedActiviteId}"`, 'first: 500']);
+      fetchWeeklyPlanEntries(modulesManager, [`sousActivite_Activite_Id: "${selectedActiviteId}"`]);
     }
   }, [selectedActiviteId]);
 
@@ -228,7 +231,7 @@ function WeeklyPlanPage({
     if (prevSubmittingMutationRef.current && !submittingMutation) {
       journalize(mutation);
       if (selectedActiviteId) {
-        fetchWeeklyPlanEntries(modulesManager, [`sousActivite_Activite_Id: "${selectedActiviteId}"`, 'first: 500']);
+        fetchWeeklyPlanEntries(modulesManager, [`sousActivite_Activite_Id: "${selectedActiviteId}"`]);
       }
     }
   }, [submittingMutation]);
@@ -264,7 +267,14 @@ function WeeklyPlanPage({
     entryMap[key] = entry;
   });
 
+  const permissions = activityPermissions(rights, selectedActiviteFull);
+  const loadError = errorPtbas
+    || (selectedPtbaId && errorActivites)
+    || (selectedActiviteId && (errorActivite || errorWeeklyPlan))
+    || null;
+
   const handleCellClick = (sousActivite, week, existingEntry) => {
+    if (!existingEntry && !permissions.canCreateWeekly) return;
     setEditingSousActiviteId(sousActivite.id);
     setEditingSousActiviteName(sousActivite.name);
     setEditingEntry(existingEntry || {
@@ -286,7 +296,11 @@ function WeeklyPlanPage({
   };
 
   const handleDelete = (entry) => {
-    deleteWeeklyPlanEntry(entry, formatMessage('weeklyPlan.mutation.deleteLabel'));
+    if (entry?.id) {
+      deleteWeeklyPlanEntry(entry, formatMessage('weeklyPlan.mutation.deleteLabel'));
+    }
+    setFormOpen(false);
+    setEditingEntry(null);
   };
 
   return (
@@ -339,13 +353,22 @@ function WeeklyPlanPage({
         </Grid>
       </Paper>
 
+      {loadError && (
+        <Paper className={classes.emptyState}>
+          <Typography color="error">
+            {formatMessage('weeklyPlan.loadError')}
+            {loadError.detail ? ` : ${loadError.detail}` : ''}
+          </Typography>
+        </Paper>
+      )}
+
       {fetchingWeeklyPlan && (
         <div style={{ textAlign: 'center', padding: 24 }}>
           <CircularProgress />
         </div>
       )}
 
-      {selectedActiviteId && !fetchingWeeklyPlan && sousActivites.length === 0 && (
+      {selectedActiviteId && !fetchingWeeklyPlan && !loadError && sousActivites.length === 0 && (
         <Paper className={classes.emptyState}>
           <Typography color="textSecondary">
             {formatMessage('execution.noSousActivites')}
@@ -422,7 +445,7 @@ function WeeklyPlanPage({
                                 </Tooltip>
                               )}
                             </div>
-                          ) : (
+                          ) : permissions.canCreateWeekly && (
                             <Tooltip title={formatMessage('tooltip.createButton')}>
                               <AddIcon
                                 fontSize="small"
@@ -446,9 +469,10 @@ function WeeklyPlanPage({
           open={formOpen}
           onClose={() => { setFormOpen(false); setEditingEntry(null); }}
           onSave={handleFormSave}
+          onDelete={permissions.canDeleteWeekly ? handleDelete : null}
           entry={editingEntry}
           sousActiviteName={editingSousActiviteName}
-          readOnly={false}
+          readOnly={editingEntry?.id ? !permissions.canUpdateWeekly : !permissions.canCreateWeekly}
         />
       )}
     </div>
@@ -465,6 +489,10 @@ const mapStateToProps = (state) => ({
   fetchingActivite: state.activity.fetchingActivite,
   weeklyPlanEntries: state.activity.weeklyPlanEntries,
   fetchingWeeklyPlan: state.activity.fetchingWeeklyPlan,
+  errorPtbas: state.activity.errorPtbas,
+  errorActivites: state.activity.errorActivites,
+  errorActivite: state.activity.errorActivite,
+  errorWeeklyPlan: state.activity.errorWeeklyPlan,
   submittingMutation: state.activity.submittingMutation,
   mutation: state.activity.mutation,
 });

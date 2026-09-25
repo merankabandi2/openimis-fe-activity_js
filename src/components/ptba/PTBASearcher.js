@@ -19,10 +19,10 @@ import { fetchPtbas, deletePtba } from '../../actions';
 import {
   MODULE_NAME,
   RIGHT_PTBA_SEARCH,
-  RIGHT_PTBA_DELETE,
   ROUTE_PTBA,
 } from '../../constants';
 import PTBAFilter from './PTBAFilter';
+import { canDeletePtbaFromList } from '../../utils/permissions';
 
 const PTBA_STATUS_COLORS = {
   DRAFT: 'default',
@@ -135,7 +135,7 @@ function PTBASearcher({
             <EditIcon />
           </IconButton>
         </Tooltip>
-        {rights.includes(RIGHT_PTBA_DELETE) && (
+        {canDeletePtbaFromList(rights, ptba) && (
           <Tooltip title={formatMessage('tooltip.delete')}>
             <IconButton
               onClick={() => onDelete(ptba)}

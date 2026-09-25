@@ -84,7 +84,7 @@ const useStyles = makeStyles((theme) => ({
 function SousComposantePanel({
   sousComposante,
   composanteId,
-  readOnly,
+  permissions,
   onActiviteClick,
   updateSousComposante,
   deleteSousComposante,
@@ -228,18 +228,22 @@ function SousComposantePanel({
               <Typography className={classes.sousComposanteTitle}>
                 {formatMessage('sousComposante')} {sousComposante.code}: {sousComposante.name}
               </Typography>
-              {!readOnly && (
+              {(permissions?.canEditHierarchy || permissions?.canDeleteHierarchy) && (
                 <div className={classes.headerActions}>
-                  <Tooltip title={formatMessage('tooltip.edit')}>
-                    <IconButton size="small" onClick={handleStartEdit}>
-                      <EditIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title={formatMessage('tooltip.delete')}>
-                    <IconButton size="small" onClick={handleDelete}>
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
+                  {permissions.canEditHierarchy && (
+                    <Tooltip title={formatMessage('tooltip.edit')}>
+                      <IconButton size="small" onClick={handleStartEdit}>
+                        <EditIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  )}
+                  {permissions.canDeleteHierarchy && (
+                    <Tooltip title={formatMessage('tooltip.delete')}>
+                      <IconButton size="small" onClick={handleDelete}>
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  )}
                 </div>
               )}
             </>
@@ -252,11 +256,10 @@ function SousComposantePanel({
               <ActiviteCard
                 key={activite.id}
                 activite={activite}
-                readOnly={readOnly}
                 onClick={onActiviteClick}
               />
             ))}
-          {!readOnly && (
+          {permissions?.canAddActivite && (
             <Button
               size="small"
               startIcon={<AddIcon />}

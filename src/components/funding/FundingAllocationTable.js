@@ -22,6 +22,8 @@ import { makeStyles } from '@material-ui/styles';
 import {
   useModulesManager,
   useTranslations,
+  coreConfirm,
+  clearConfirm,
 } from '@openimis/fe-core';
 import { allocateFunding, deallocateFunding, fetchFundingSources } from '../../actions';
 import { MODULE_NAME } from '../../constants';
@@ -55,14 +57,27 @@ function FundingAllocationTable({
   allocations,
   budgetTotal,
   readOnly,
+  confirmed,
   allocateFunding,
   deallocateFunding,
+  coreConfirm,
+  clearConfirm,
 }) {
   const modulesManager = useModulesManager();
   const classes = useStyles();
   const { formatMessage, formatMessageWithValues } = useTranslations(MODULE_NAME, modulesManager);
 
   const [rows, setRows] = useState([]);
+  const [confirmedAction, setConfirmedAction] = useState(() => null);
+
+  // Only the table that opened the shared confirm dialog holds a callback.
+  useEffect(() => {
+    if (confirmed && confirmedAction) {
+      confirmedAction();
+      setConfirmedAction(() => null);
+    }
+    return () => confirmed && clearConfirm(null);
+  }, [confirmed]);
 
   useEffect(() => {
     const allocs = (allocations || []).map((a) => ({
@@ -90,7 +105,6 @@ function FundingAllocationTable({
     if (!row.fundingSource || !row.amount) return;
     allocateFunding(
       {
-        id: row.id,
         sousActiviteId,
         fundingSourceId: row.fundingSource.id,
         amount: row.amount,
@@ -103,9 +117,13 @@ function FundingAllocationTable({
     if (row._isNew) {
       setRows(rows.filter((r) => r._tempId !== row._tempId));
     } else {
-      deallocateFunding(
+      setConfirmedAction(() => () => deallocateFunding(
         row,
         formatMessageWithValues('fundingSource.mutation.deallocateLabel', { id: row.id }),
+      ));
+      coreConfirm(
+        formatMessage('fundingSource.deallocate.confirm.title'),
+        formatMessage('fundingSource.deallocate.confirm.message'),
       );
     }
   };
@@ -206,9 +224,15 @@ function FundingAllocationTable({
   );
 }
 
+const mapStateToProps = (state) => ({
+  confirmed: state.core.confirmed,
+});
+
 const mapDispatchToProps = (dispatch) => bindActionCreators({
   allocateFunding,
   deallocateFunding,
+  coreConfirm,
+  clearConfirm,
 }, dispatch);
 
-export default connect(null, mapDispatchToProps)(FundingAllocationTable);
+export default connect(mapStateToProps, mapDispatchToProps)(FundingAllocationTable);

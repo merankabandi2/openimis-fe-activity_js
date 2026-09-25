@@ -66,13 +66,6 @@ function PerformanceHeatmap({ composantePerformance, quarterlyTrend }) {
     );
   }
 
-  const quarterTrends = {};
-  if (quarterlyTrend) {
-    quarterlyTrend.forEach((qt) => {
-      quarterTrends[qt.quarter] = qt.tauxRealisation || 0;
-    });
-  }
-
   return (
     <Paper className={classes.root} elevation={1}>
       <Typography className={classes.title}>
@@ -98,19 +91,23 @@ function PerformanceHeatmap({ composantePerformance, quarterlyTrend }) {
           <TableBody>
             {composantePerformance.map((comp) => {
               const overallRate = parseFloat(comp.tauxRealisation) || 0;
+              const quarterRates = {};
+              (comp.quarterly || []).forEach((qt) => {
+                quarterRates[qt.quarter] = qt.tauxRealisation || 0;
+              });
               return (
                 <TableRow key={comp.composanteId || comp.composanteCode}>
                   <TableCell className={classes.composanteCell}>
                     {comp.composanteCode} - {comp.composanteName}
                   </TableCell>
                   {QUARTERS.map((q) => {
-                    const ptbaRate = quarterTrends[q.value];
-                    const hasData = ptbaRate !== undefined && ptbaRate !== null;
-                    const colorStyle = hasData ? getHeatmapColor(ptbaRate) : {};
+                    const rate = quarterRates[q.value];
+                    const hasData = rate !== undefined && rate !== null;
+                    const colorStyle = hasData ? getHeatmapColor(rate) : {};
                     return (
                       <TableCell key={q.value}>
                         <div className={classes.cell} style={colorStyle}>
-                          {hasData ? `${parseFloat(ptbaRate).toFixed(0)}%` : '—'}
+                          {hasData ? `${parseFloat(rate).toFixed(0)}%` : '—'}
                         </div>
                       </TableCell>
                     );
