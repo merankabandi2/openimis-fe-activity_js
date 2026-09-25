@@ -25,14 +25,14 @@ function page(names) {
   let state = { confirmed: null };
   const deleted = [];
   const owners = Object.fromEntries(names.map((n) => [n, { token: newConfirmToken(), pending: null }]));
-  const settle = () => {
-    Object.values(owners).forEach((o) => {
-      const step = confirmStep(o.pending, state.confirm, state.confirmed);
-      o.pending = step.pending;
-      if (step.run) step.run();
-    });
-  };
+  const settle = () => Object.values(owners).forEach((o) => settleOne(o));
   const dispatch = (action) => { state = core(state, action); settle(); };
+  function settleOne(o) {
+    const step = confirmStep(o.pending, state.confirm, state.confirmed);
+    o.pending = step.pending;
+    if (step.run) step.run();
+    if (step.answered) dispatch({ type: 'CORE_CONFIRM_CLEAR', payload: null });
+  }
   return {
     deleted,
     state: () => state,
@@ -92,12 +92,31 @@ test('ACT-S15: after a confirmed delete the next confirm dialog stays open and r
 
 test('confirmStep keeps an action whose dialog is not shown yet', () => {
   const pending = { token: 'x', action: () => {}, opened: false };
-  assert.deepEqual(confirmStep(pending, undefined, true), { pending, run: null });
+  assert.deepEqual(confirmStep(pending, undefined, true), { pending, run: null, answered: false });
 });
 
 test('confirmStep drops an opened action closed by clearConfirm(null)', () => {
   const pending = { token: 'x', action: () => {}, opened: true };
-  assert.deepEqual(confirmStep(pending, undefined, null), { pending: null, run: null });
+  assert.deepEqual(confirmStep(pending, undefined, null), { pending: null, run: null, answered: true });
+});
+
+test('ACT-S15: an answered dialog leaves state.core.confirmed at null', () => {
+  const ok = page(['sousActiviteTable']);
+  ok.askDelete('sousActiviteTable', 'sa:1');
+  ok.answer(true);
+  assert.equal(ok.state().confirmed, null);
+  const cancel = page(['sousActiviteTable']);
+  cancel.askDelete('sousActiviteTable', 'sa:1');
+  cancel.answer(false);
+  assert.equal(cancel.state().confirmed, null);
+});
+
+test('confirmStep runs an opened action answered OK', () => {
+  const action = () => {};
+  assert.deepEqual(
+    confirmStep({ token: 'x', action, opened: true }, undefined, true),
+    { pending: null, run: action, answered: true },
+  );
 });
 
 test('newConfirmToken gives each component instance its own intent', () => {

@@ -17,6 +17,9 @@ export function useOwnedConfirm(confirm, confirmed, coreConfirm, clearConfirm) {
     const step = confirmStep(pending.current, confirm, confirmed);
     pending.current = step.pending;
     if (step.run) step.run();
+    // The answer is consumed: state.core.confirmed goes back to null, so no
+    // component mounted later reads it as an answer to its own dialog.
+    if (step.answered) clearConfirm(null);
   }, [confirm, confirmed]);
 
   // A dialog this component opened does not outlive it.

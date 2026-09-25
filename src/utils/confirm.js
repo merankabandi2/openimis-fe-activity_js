@@ -12,18 +12,20 @@ export const newConfirmToken = () => {
 };
 
 // `pending` is the action a component waits to run on OK:
-// { token, action, opened } or null. Returns the pending action to keep and
-// the action to run now (or null):
+// { token, action, opened } or null. Returns the pending action to keep, the
+// action to run now (or null) and whether the component's own dialog has just
+// been answered:
 // - its own dialog is shown: marked opened;
 // - another dialog is shown (another component, session expiry): dropped;
-// - its dialog is closed: run when the answer is OK, dropped in every case.
+// - its dialog is closed: answered, run when the answer is OK, dropped in
+//   every case.
 export function confirmStep(pending, confirm, confirmed) {
-  if (!pending) return { pending: null, run: null };
+  if (!pending) return { pending: null, run: null, answered: false };
   if (confirm) {
     return confirm.intent === pending.token
-      ? { pending: { ...pending, opened: true }, run: null }
-      : { pending: null, run: null };
+      ? { pending: { ...pending, opened: true }, run: null, answered: false }
+      : { pending: null, run: null, answered: false };
   }
-  if (!pending.opened) return { pending, run: null };
-  return { pending: null, run: confirmed === true ? pending.action : null };
+  if (!pending.opened) return { pending, run: null, answered: false };
+  return { pending: null, run: confirmed === true ? pending.action : null, answered: true };
 }
