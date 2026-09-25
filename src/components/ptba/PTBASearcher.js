@@ -23,6 +23,7 @@ import {
 } from '../../constants';
 import PTBAFilter from './PTBAFilter';
 import { canDeletePtbaFromList } from '../../utils/permissions';
+import { useOwnedConfirm } from '../../utils/useOwnedConfirm';
 
 const PTBA_STATUS_COLORS = {
   DRAFT: 'default',
@@ -43,6 +44,7 @@ function PTBASearcher({
   clearConfirm,
   ptbasPageInfo,
   ptbasTotalCount,
+  confirm,
   confirmed,
   submittingMutation,
   mutation,
@@ -52,32 +54,9 @@ function PTBASearcher({
   const { formatMessage, formatMessageWithValues } = useTranslations(MODULE_NAME, modulesManager);
   const rights = useSelector((store) => store.core.user.i_user.rights ?? []);
 
-  const [ptbaToDelete, setPtbaToDelete] = useState(null);
   const [deletedPtbaIds, setDeletedPtbaIds] = useState([]);
   const prevSubmittingMutationRef = useRef();
-
-  const openDeletePtbaConfirmDialog = () => {
-    coreConfirm(
-      formatMessage('ptba.delete.confirm.title'),
-      formatMessage('ptba.delete.confirm.message'),
-    );
-  };
-
-  useEffect(() => ptbaToDelete && openDeletePtbaConfirmDialog(), [ptbaToDelete]);
-
-  useEffect(() => {
-    if (ptbaToDelete && confirmed) {
-      deletePtba(
-        ptbaToDelete,
-        formatMessageWithValues('ptba.mutation.deleteLabel', { id: ptbaToDelete.id }),
-      );
-      setDeletedPtbaIds([...deletedPtbaIds, ptbaToDelete.id]);
-    }
-    if (ptbaToDelete && confirmed !== null) {
-      setPtbaToDelete(null);
-    }
-    return () => confirmed && clearConfirm(false);
-  }, [confirmed]);
+  const askConfirm = useOwnedConfirm(confirm, confirmed, coreConfirm, clearConfirm);
 
   useEffect(() => {
     if (prevSubmittingMutationRef.current && !submittingMutation) {
@@ -114,7 +93,17 @@ function PTBASearcher({
     `/${ROUTE_PTBA}/${ptba?.id}`,
   );
 
-  const onDelete = (ptba) => setPtbaToDelete(ptba);
+  const onDelete = (ptba) => askConfirm(
+    formatMessage('ptba.delete.confirm.title'),
+    formatMessage('ptba.delete.confirm.message'),
+    () => {
+      deletePtba(
+        ptba,
+        formatMessageWithValues('ptba.mutation.deleteLabel', { id: ptba.id }),
+      );
+      setDeletedPtbaIds((ids) => [...ids, ptba.id]);
+    },
+  );
 
   const itemFormatters = () => [
     (ptba) => ptba.code,
@@ -189,6 +178,7 @@ const mapStateToProps = (state) => ({
   fetchingPtbas: state.activity.fetchingPtbas,
   errorPtbas: state.activity.errorPtbas,
   ptbasTotalCount: state.activity.ptbasTotalCount,
+  confirm: state.core.confirm,
   confirmed: state.core.confirmed,
   submittingMutation: state.activity.submittingMutation,
   mutation: state.activity.mutation,

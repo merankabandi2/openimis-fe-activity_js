@@ -28,6 +28,7 @@ import {
 import { allocateFunding, deallocateFunding, fetchFundingSources } from '../../actions';
 import { MODULE_NAME } from '../../constants';
 import { formatBIFAmount } from '../../utils/string-utils';
+import { useOwnedConfirm } from '../../utils/useOwnedConfirm';
 import FundingSourcePicker from '../../pickers/FundingSourcePicker';
 
 const useStyles = makeStyles((theme) => ({
@@ -57,6 +58,7 @@ function FundingAllocationTable({
   allocations,
   budgetTotal,
   readOnly,
+  confirm,
   confirmed,
   allocateFunding,
   deallocateFunding,
@@ -68,16 +70,7 @@ function FundingAllocationTable({
   const { formatMessage, formatMessageWithValues } = useTranslations(MODULE_NAME, modulesManager);
 
   const [rows, setRows] = useState([]);
-  const [confirmedAction, setConfirmedAction] = useState(() => null);
-
-  // Only the table that opened the shared confirm dialog holds a callback.
-  useEffect(() => {
-    if (confirmed && confirmedAction) {
-      confirmedAction();
-      setConfirmedAction(() => null);
-    }
-    return () => confirmed && clearConfirm(null);
-  }, [confirmed]);
+  const askConfirm = useOwnedConfirm(confirm, confirmed, coreConfirm, clearConfirm);
 
   useEffect(() => {
     const allocs = (allocations || []).map((a) => ({
@@ -117,13 +110,13 @@ function FundingAllocationTable({
     if (row._isNew) {
       setRows(rows.filter((r) => r._tempId !== row._tempId));
     } else {
-      setConfirmedAction(() => () => deallocateFunding(
-        row,
-        formatMessageWithValues('fundingSource.mutation.deallocateLabel', { id: row.id }),
-      ));
-      coreConfirm(
+      askConfirm(
         formatMessage('fundingSource.deallocate.confirm.title'),
         formatMessage('fundingSource.deallocate.confirm.message'),
+        () => deallocateFunding(
+          row,
+          formatMessageWithValues('fundingSource.mutation.deallocateLabel', { id: row.id }),
+        ),
       );
     }
   };
@@ -225,6 +218,7 @@ function FundingAllocationTable({
 }
 
 const mapStateToProps = (state) => ({
+  confirm: state.core.confirm,
   confirmed: state.core.confirmed,
 });
 

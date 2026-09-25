@@ -46,6 +46,7 @@ import {
   ROUTE_PTBA,
 } from '../constants';
 import { activityPermissions } from '../utils/permissions';
+import { useOwnedConfirm } from '../utils/useOwnedConfirm';
 import SousActiviteTable from '../components/hierarchy/SousActiviteTable';
 import FundingAllocationTable from '../components/funding/FundingAllocationTable';
 import StatusBadge from '../components/lifecycle/StatusBadge';
@@ -104,6 +105,7 @@ function ActivitePage({
   rights,
   submittingMutation,
   mutation,
+  confirm,
   confirmed,
   coreConfirm,
   clearConfirm,
@@ -116,7 +118,7 @@ function ActivitePage({
   const [tabValue, setTabValue] = useState(0);
   const [editMode, setEditMode] = useState(false);
   const [editData, setEditData] = useState({});
-  const [confirmedAction, setConfirmedAction] = useState(() => null);
+  const askConfirm = useOwnedConfirm(confirm, confirmed, coreConfirm, clearConfirm);
   const prevSubmittingMutationRef = useRef();
 
   useEffect(() => {
@@ -146,11 +148,6 @@ function ActivitePage({
   useEffect(() => {
     prevSubmittingMutationRef.current = submittingMutation;
   });
-
-  useEffect(() => {
-    if (confirmed && confirmedAction) confirmedAction();
-    return () => confirmed && clearConfirm(null);
-  }, [confirmed]);
 
   if (!activiteId) {
     return (
@@ -208,15 +205,15 @@ function ActivitePage({
 
   // Delete
   const handleDelete = () => {
-    setConfirmedAction(() => () => {
-      deleteActivite(
-        activite,
-        formatMessageWithValues('activite.mutation.deleteLabel', { id: activite.id }),
-      );
-    });
-    coreConfirm(
+    askConfirm(
       formatMessage('activite.delete.confirm.title'),
       formatMessage('activite.delete.confirm.message'),
+      () => {
+        deleteActivite(
+          activite,
+          formatMessageWithValues('activite.mutation.deleteLabel', { id: activite.id }),
+        );
+      },
     );
   };
 
@@ -461,6 +458,7 @@ const mapStateToProps = (state, props) => ({
   fetchingActivite: state.activity.fetchingActivite,
   submittingMutation: state.activity.submittingMutation,
   mutation: state.activity.mutation,
+  confirm: state.core.confirm,
   confirmed: state.core.confirmed,
 });
 

@@ -40,6 +40,7 @@ import {
 } from '../../actions';
 import { MODULE_NAME } from '../../constants';
 import { formatBIFAmount } from '../../utils/string-utils';
+import { useOwnedConfirm } from '../../utils/useOwnedConfirm';
 import { displayedBudgets, sousActiviteUpdatePayload } from '../../utils/sous-activite';
 import RevisionStatusBadge from '../lifecycle/RevisionStatusBadge';
 
@@ -114,6 +115,7 @@ function SousActiviteTable({
   activiteId,
   sousActivites,
   permissions,
+  confirm,
   confirmed,
   createSousActivite,
   updateSousActivite,
@@ -130,7 +132,7 @@ function SousActiviteTable({
 
   const [rows, setRows] = useState([]);
   const [editingRowId, setEditingRowId] = useState(null);
-  const [confirmedAction, setConfirmedAction] = useState(() => null);
+  const askConfirm = useOwnedConfirm(confirm, confirmed, coreConfirm, clearConfirm);
 
   const canCreate = !!permissions?.canCreateSousActivite;
   const canUpdate = !!permissions?.canUpdateSousActivite;
@@ -141,15 +143,6 @@ function SousActiviteTable({
   const originals = {};
   (sousActivites || []).forEach((sa) => { originals[sa.id] = sa; });
   const canEditRow = (row) => (row._isNew ? canCreate : canUpdate);
-
-  // Only the table that opened the shared confirm dialog holds a callback.
-  useEffect(() => {
-    if (confirmed && confirmedAction) {
-      confirmedAction();
-      setConfirmedAction(() => null);
-    }
-    return () => confirmed && clearConfirm(null);
-  }, [confirmed]);
 
   useEffect(() => {
     const sorted = [...(sousActivites || [])].sort(
@@ -218,13 +211,13 @@ function SousActiviteTable({
     if (row._isNew) {
       setRows(rows.filter((r) => r._tempId !== row._tempId));
     } else {
-      setConfirmedAction(() => () => deleteSousActivite(
-        row,
-        formatMessageWithValues('sousActivite.mutation.deleteLabel', { id: row.id }),
-      ));
-      coreConfirm(
+      askConfirm(
         formatMessage('sousActivite.delete.confirm.title'),
         formatMessage('sousActivite.delete.confirm.message'),
+        () => deleteSousActivite(
+          row,
+          formatMessageWithValues('sousActivite.mutation.deleteLabel', { id: row.id }),
+        ),
       );
     }
   };
@@ -492,6 +485,7 @@ function SousActiviteTable({
 }
 
 const mapStateToProps = (state) => ({
+  confirm: state.core.confirm,
   confirmed: state.core.confirmed,
 });
 

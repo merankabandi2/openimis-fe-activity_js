@@ -45,6 +45,7 @@ import {
 import { ACTION_TYPE } from '../actions';
 import { mutationLabel, pageTitle } from '../utils/string-utils';
 import { ptbaPermissions, ptbaDatesValid } from '../utils/permissions';
+import { useOwnedConfirm } from '../utils/useOwnedConfirm';
 import PTBAForm from '../components/ptba/PTBAForm';
 import PTBAHeadPanel from '../components/ptba/PTBAHeadPanel';
 import ComposantePanel from '../components/hierarchy/ComposantePanel';
@@ -74,6 +75,7 @@ function PTBAPage({
   ptbaId,
   fetchPtba,
   rights,
+  confirm,
   confirmed,
   submittingMutation,
   mutation,
@@ -91,7 +93,7 @@ function PTBAPage({
   const { formatMessage, formatMessageWithValues } = useTranslations(MODULE_NAME, modulesManager);
 
   const [editedPtba, setEditedPtba] = useState({});
-  const [confirmedAction, setConfirmedAction] = useState(() => null);
+  const askConfirm = useOwnedConfirm(confirm, confirmed, coreConfirm, clearConfirm);
   const prevSubmittingMutationRef = useRef();
   const permissions = ptbaPermissions(rights, ptba, !ptbaId);
   const pageLocked = permissions.locked;
@@ -108,13 +110,6 @@ function PTBAPage({
       fetchPtba(modulesManager, [`id: "${ptbaId}"`]);
     }
   }, [ptbaId]);
-
-  useEffect(() => {
-    // confirmedAction may be null when a child panel (Composante/SousComposante)
-    // triggered the shared confirm dialog — only fire our own stored action.
-    if (confirmed && confirmedAction) confirmedAction();
-    return () => confirmed && clearConfirm(null);
-  }, [confirmed]);
 
   useEffect(() => {
     if (prevSubmittingMutationRef.current && !submittingMutation) {
@@ -171,10 +166,10 @@ function PTBAPage({
   );
 
   const openDeletePtbaConfirmDialog = () => {
-    setConfirmedAction(() => deletePtbaCallback);
-    coreConfirm(
+    askConfirm(
       formatMessage('ptba.delete.confirm.title'),
       formatMessage('ptba.delete.confirm.message'),
+      deletePtbaCallback,
     );
   };
 
@@ -265,7 +260,6 @@ function PTBAPage({
           readOnly={formReadOnly}
           rights={rights}
           actions={actions}
-          setConfirmedAction={setConfirmedAction}
           saveTooltip={formatMessage('tooltip.save')}
         />
         {!datesValid && (
@@ -414,6 +408,7 @@ const mapDispatchToProps = (dispatch) => bindActionCreators({
 const mapStateToProps = (state, props) => ({
   ptbaId: props.match.params.ptba_uuid,
   rights: state.core?.user?.i_user?.rights ?? [],
+  confirm: state.core.confirm,
   confirmed: state.core.confirmed,
   submittingMutation: state.activity.submittingMutation,
   mutation: state.activity.mutation,
