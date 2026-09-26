@@ -235,7 +235,7 @@ const ACTIVITE_FULL_PROJECTION = () => [
   'jsonExt',
   'revisionStatus',
   'revisionComment',
-  'sousComposante { id code name composante { id code name ptba { id code name } } }',
+  'sousComposante { id code name composante { id code name ptba { id code name status } } }',
   'sousActivites { edges { node { id code name unit quantityTotal quantityT1 quantityT2 quantityT3 quantityT4 unitCost budgetT1 budgetT2 budgetT3 budgetT4 budgetTotal expenseCategoryCode expenseCategory sortOrder quantityInitial quantityRevised unitCostInitial unitCostRevised budgetInitial budgetRevised dateStart dateEnd responsible intervenants revisionStatus revisionComment fundingAllocations { edges { node { id fundingSource { id code name } amount } } } } } }',
   'indicators { edges { node { id name baseline target achievements { edges { node { achieved date timestamp } } } } } }',
 ];

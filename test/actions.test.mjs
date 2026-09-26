@@ -97,3 +97,8 @@ test('ACT-S12: PTBA create and update send no status (it changes only through tr
     assert.doesNotMatch(JSON.stringify(action), /status:/);
   }
 });
+
+test('ACT-B-R3: the activity query asks the status of its PTBA', () => {
+  const { payload } = fetchActivite(null, [`id: "${UUID}"`]);
+  assert.match(payload, /ptba \{ id code name status \}/);
+});
