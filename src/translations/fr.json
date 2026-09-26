@@ -115,6 +115,7 @@
   "activity.fundingSource.amount": "Montant",
   "activity.fundingSource.percentage": "% du total",
   "activity.fundingSource.addSource": "Ajouter source",
+  "activity.fundingSource.saveRefused": "Enregistrement refusé",
   "activity.fundingSource.total": "Total",
   "activity.fundingSource.page.title": "Sources de Financement",
   "activity.fundingSource.add": "Ajouter une source",
@@ -240,6 +241,8 @@
   "activity.weeklyPlan.mutation.createLabel": "Creer entree planification hebdomadaire",
   "activity.weeklyPlan.mutation.updateLabel": "Modifier entree planification hebdomadaire",
   "activity.weeklyPlan.mutation.deleteLabel": "Supprimer entree planification hebdomadaire",
+  "activity.weeklyPlan.delete.confirm.title": "Supprimer l'entrée de planification",
+  "activity.weeklyPlan.delete.confirm.message": "Supprimer cette entrée de planification hebdomadaire ?",
 
   "activity.ptba.action.approve": "Approuver",
   "activity.ptba.action.close": "Cloturer",

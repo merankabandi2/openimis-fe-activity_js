@@ -4,6 +4,7 @@ import { makeStyles } from '@material-ui/styles';
 import { useModulesManager, useTranslations } from '@openimis/fe-core';
 import { MODULE_NAME } from '../../constants';
 import { formatBIFAmount } from '../../utils/string-utils';
+import { effectiveBudget } from '../../utils/budget';
 
 const useStyles = makeStyles(() => ({
   bar: {
@@ -85,7 +86,7 @@ function CalendarEventBar({ item, color, left, width, onClick }) {
       )}
       {(item.budgetTotal || item.budgetRevised) && (
         <Typography className={classes.tooltipRow}>
-          Budget: {formatBIFAmount(item.budgetRevised || item.budgetTotal)} BIF
+          Budget: {formatBIFAmount(effectiveBudget(item))} BIF
         </Typography>
       )}
     </Box>

@@ -22,6 +22,8 @@ import {
   useModulesManager,
   useTranslations,
   journalize,
+  coreConfirm,
+  clearConfirm,
 } from '@openimis/fe-core';
 import {
   fetchWeeklyPlanEntries,
@@ -30,6 +32,7 @@ import {
   deleteWeeklyPlanEntry,
 } from '../../actions';
 import { MODULE_NAME } from '../../constants';
+import { useOwnedConfirm } from '../../utils/useOwnedConfirm';
 import WeeklyStatusBadge from '../lifecycle/WeeklyStatusBadge';
 import WeeklyPlanForm from './WeeklyPlanForm';
 
@@ -152,11 +155,16 @@ function WeeklyPlanTab({
   createWeeklyPlanEntry,
   updateWeeklyPlanEntry,
   deleteWeeklyPlanEntry,
+  confirm,
+  confirmed,
+  coreConfirm,
+  clearConfirm,
 }) {
   const modulesManager = useModulesManager();
   const classes = useStyles();
   const { formatMessage } = useTranslations(MODULE_NAME, modulesManager);
   const prevSubmittingMutationRef = useRef();
+  const askConfirm = useOwnedConfirm(confirm, confirmed, coreConfirm, clearConfirm);
   const canCreate = !!permissions?.canCreateWeekly;
   const canUpdate = !!permissions?.canUpdateWeekly;
   const canDelete = !!permissions?.canDeleteWeekly;
@@ -215,11 +223,25 @@ function WeeklyPlanTab({
     setEditingEntry(null);
   };
 
+  const confirmDeleteEntry = (entry, onDeleted) => {
+    askConfirm(
+      formatMessage('weeklyPlan.delete.confirm.title'),
+      formatMessage('weeklyPlan.delete.confirm.message'),
+      () => {
+        deleteWeeklyPlanEntry(entry, formatMessage('weeklyPlan.mutation.deleteLabel'));
+        if (onDeleted) onDeleted();
+      },
+    );
+  };
+
   const handleDeleteEntry = (entry, e) => {
     e.stopPropagation();
-    if (entry?.id) {
-      deleteWeeklyPlanEntry(entry, formatMessage('weeklyPlan.mutation.deleteLabel'));
-    }
+    if (entry?.id) confirmDeleteEntry(entry);
+  };
+
+  const closeForm = () => {
+    setFormOpen(false);
+    setEditingEntry(null);
   };
 
   if (fetchingWeeklyPlan) {
@@ -336,11 +358,8 @@ function WeeklyPlanTab({
           onClose={() => { setFormOpen(false); setEditingEntry(null); }}
           onSave={handleFormSave}
           onDelete={canDelete ? (entry) => {
-            if (entry?.id) {
-              deleteWeeklyPlanEntry(entry, formatMessage('weeklyPlan.mutation.deleteLabel'));
-            }
-            setFormOpen(false);
-            setEditingEntry(null);
+            if (entry?.id) confirmDeleteEntry(entry, closeForm);
+            else closeForm();
           } : null}
           entry={editingEntry}
           sousActiviteName={editingSousActiviteName}
@@ -356,6 +375,8 @@ const mapStateToProps = (state) => ({
   fetchingWeeklyPlan: state.activity.fetchingWeeklyPlan,
   submittingMutation: state.activity.submittingMutation,
   mutation: state.activity.mutation,
+  confirm: state.core.confirm,
+  confirmed: state.core.confirmed,
 });
 
 const mapDispatchToProps = (dispatch) => bindActionCreators({
@@ -364,6 +385,8 @@ const mapDispatchToProps = (dispatch) => bindActionCreators({
   updateWeeklyPlanEntry,
   deleteWeeklyPlanEntry,
   journalize,
+  coreConfirm,
+  clearConfirm,
 }, dispatch);
 
 export default connect(mapStateToProps, mapDispatchToProps)(WeeklyPlanTab);
