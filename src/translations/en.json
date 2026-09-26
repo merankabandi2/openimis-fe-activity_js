@@ -113,6 +113,7 @@
   "activity.fundingSource.amount": "Amount",
   "activity.fundingSource.percentage": "% of total",
   "activity.fundingSource.addSource": "Add source",
+  "activity.fundingSource.saveRefused": "Save refused",
   "activity.fundingSource.total": "Total",
   "activity.fundingSource.page.title": "Funding Sources",
   "activity.fundingSource.add": "Add funding source",
@@ -238,6 +239,8 @@
   "activity.weeklyPlan.mutation.createLabel": "Create weekly plan entry",
   "activity.weeklyPlan.mutation.updateLabel": "Update weekly plan entry",
   "activity.weeklyPlan.mutation.deleteLabel": "Delete weekly plan entry",
+  "activity.weeklyPlan.delete.confirm.title": "Delete planning entry",
+  "activity.weeklyPlan.delete.confirm.message": "Delete this weekly planning entry?",
 
   "activity.ptba.action.approve": "Approve",
   "activity.ptba.action.close": "Close",

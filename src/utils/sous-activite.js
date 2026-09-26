@@ -1,6 +1,6 @@
 const QUANTITY_FIELDS = ['quantityT1', 'quantityT2', 'quantityT3', 'quantityT4', 'unitCost'];
 
-const EDITABLE_TEXT_FIELDS = ['name', 'unit', 'dateStart', 'dateEnd', 'responsible', 'revisionComment'];
+const EDITABLE_TEXT_FIELDS = ['code', 'name', 'unit', 'dateStart', 'dateEnd', 'responsible', 'revisionComment'];
 
 const EDITABLE_NUMBER_FIELDS = [
   'quantityInitial', 'quantityRevised', 'unitCostInitial', 'unitCostRevised',
@@ -8,6 +8,33 @@ const EDITABLE_NUMBER_FIELDS = [
 ];
 
 const num = (value) => parseFloat(value) || 0;
+
+/**
+ * Row added from « Ajouter une sous-activite ». The revised budget stays
+ * empty (null) until a revision sets it.
+ */
+export const emptySousActiviteRow = () => ({
+  id: null,
+  code: '',
+  name: '',
+  unit: '',
+  quantityT1: 0,
+  quantityT2: 0,
+  quantityT3: 0,
+  quantityT4: 0,
+  unitCost: 0,
+  quantityInitial: 0,
+  quantityRevised: 0,
+  unitCostInitial: 0,
+  unitCostRevised: 0,
+  budgetInitial: 0,
+  budgetRevised: null,
+  dateStart: '',
+  dateEnd: '',
+  responsible: '',
+  revisionStatus: 'INITIAL',
+  revisionComment: '',
+});
 
 const sameNumber = (a, b) => num(a) === num(b);
 

@@ -49,5 +49,8 @@ export const dispatchMutationReq = (state, action) => ({ ...state, submittingMut
 export const dispatchMutationResp = (state) => ({ ...state, submittingMutation: false });
 export const dispatchMutationErr = (state) => ({ ...state, submittingMutation: false });
 export const journalize = (mutation) => ({ type: 'CORE_MUTATION_ADD', payload: mutation });
-export const fetchMutation = (clientMutationId) => ({ type: 'FETCH_MUTATION', clientMutationId });
+export const fetchMutation = (clientMutationId) => graphql(
+  formatPageQuery('mutationLogs', [`clientMutationId: "${clientMutationId}"`], ['id', 'status', 'error', 'clientMutationId']),
+  'CORE_MUTATION',
+);
 export const coreAlert = (title, message, detail) => ({ type: 'CORE_ALERT', payload: { title, message, detail } });
