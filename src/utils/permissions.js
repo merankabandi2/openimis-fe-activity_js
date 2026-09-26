@@ -44,16 +44,20 @@ export const canDeletePtbaFromList = (rights, ptba) => (
 
 /**
  * What the activity screen lets the user do, per action, with the right
- * each backend mutation checks. A CLOTURE activity is read-only.
+ * each backend mutation checks. A CLOTURE activity is read-only. Under a
+ * CLOSED PTBA the activity and its sous-activites cannot be edited, created
+ * or deleted (the backend refuses those mutations).
  */
 export function activityPermissions(rights, activite) {
   const open = activite?.status !== ACTIVITY_STATUS.CLOTURE;
+  const ptbaOpen = activite?.sousComposante?.composante?.ptba?.status !== PTBA_STATUS.CLOSED;
+  const editable = open && ptbaOpen;
   return {
-    canEdit: open && holds(rights, RIGHT_ACTIVITY_UPDATE),
-    canDelete: open && holds(rights, RIGHT_ACTIVITY_DELETE),
-    canCreateSousActivite: open && holds(rights, RIGHT_ACTIVITY_CREATE),
-    canUpdateSousActivite: open && holds(rights, RIGHT_ACTIVITY_UPDATE),
-    canDeleteSousActivite: open && holds(rights, RIGHT_ACTIVITY_DELETE),
+    canEdit: editable && holds(rights, RIGHT_ACTIVITY_UPDATE),
+    canDelete: editable && holds(rights, RIGHT_ACTIVITY_DELETE),
+    canCreateSousActivite: editable && holds(rights, RIGHT_ACTIVITY_CREATE),
+    canUpdateSousActivite: editable && holds(rights, RIGHT_ACTIVITY_UPDATE),
+    canDeleteSousActivite: editable && holds(rights, RIGHT_ACTIVITY_DELETE),
     canBeginRevision: open && holds(rights, RIGHT_ACTIVITY_UPDATE),
     canDecideRevision: open && holds(rights, RIGHT_EXECUTION_APPROVE),
     canReportExecution: activite?.status === ACTIVITY_STATUS.EN_COURS
