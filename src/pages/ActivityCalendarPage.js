@@ -29,6 +29,7 @@ import {
 } from '../constants';
 import { fetchPtbas, fetchCalendarActivities } from '../actions';
 import { fiscalWindow } from '../utils/calendar-window';
+import { effectiveBudget } from '../utils/budget';
 import CalendarToolbar from '../components/calendar/CalendarToolbar';
 import CalendarFilterDrawer from '../components/calendar/CalendarFilterDrawer';
 import CalendarTimelineView from '../components/calendar/CalendarTimelineView';
@@ -255,10 +256,7 @@ function ActivityCalendarPage({
 
     // Has budget
     if (filters.hasBudget) {
-      items = items.filter((a) => {
-        const budget = parseFloat(a.budgetRevised || a.budgetTotal || 0);
-        return budget > 0;
-      });
+      items = items.filter((a) => effectiveBudget(a) > 0);
     }
 
     // Behind schedule (simplified: no dateEnd in the past with non-REALISE/CLOTURE status)

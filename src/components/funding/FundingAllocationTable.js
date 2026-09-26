@@ -28,6 +28,8 @@ import {
 import { allocateFunding, deallocateFunding, fetchFundingSources } from '../../actions';
 import { MODULE_NAME } from '../../constants';
 import { formatBIFAmount } from '../../utils/string-utils';
+import { mergeAllocationRows } from '../../utils/funding';
+import { MUTATION_STATUS } from '../../utils/mutation-outcome';
 import { useOwnedConfirm } from '../../utils/useOwnedConfirm';
 import FundingSourcePicker from '../../pickers/FundingSourcePicker';
 
@@ -73,13 +75,13 @@ function FundingAllocationTable({
   const askConfirm = useOwnedConfirm(confirm, confirmed, coreConfirm, clearConfirm);
 
   useEffect(() => {
-    const allocs = (allocations || []).map((a) => ({
-      id: a.id,
-      fundingSource: a.fundingSource,
-      amount: parseFloat(a.amount || 0),
-    }));
-    setRows(allocs);
+    setRows((previous) => mergeAllocationRows(allocations, previous));
   }, [allocations]);
+
+  const rowKey = (row) => row.id || row._tempId;
+  const patchRow = (key, patch) => setRows((current) => current.map(
+    (r) => (rowKey(r) === key ? { ...r, ...patch } : r),
+  ));
 
   const totalAllocated = rows.reduce((sum, r) => sum + (parseFloat(r.amount) || 0), 0);
   const totalBudget = parseFloat(budgetTotal) || 0;
@@ -90,13 +92,17 @@ function FundingAllocationTable({
 
   const handleCellChange = (rowIndex, field, value) => {
     const newRows = [...rows];
-    newRows[rowIndex] = { ...newRows[rowIndex], [field]: value };
+    newRows[rowIndex] = { ...newRows[rowIndex], [field]: value, _error: null };
     setRows(newRows);
   };
 
-  const handleSaveRow = (row) => {
+  // A refused save keeps the row with the typed values and the refusal
+  // message; an accepted one hands the row over to the refetched allocations.
+  const handleSaveRow = async (row) => {
     if (!row.fundingSource || !row.amount) return;
-    allocateFunding(
+    const key = rowKey(row);
+    patchRow(key, { _error: null });
+    const outcome = await allocateFunding(
       {
         sousActiviteId,
         fundingSourceId: row.fundingSource.id,
@@ -104,6 +110,11 @@ function FundingAllocationTable({
       },
       formatMessage('fundingSource.addSource'),
     );
+    if (outcome?.status === MUTATION_STATUS.ERROR) {
+      patchRow(key, { _error: outcome.messages.join(' ') || formatMessage('fundingSource.saveRefused') });
+    } else if (row._isNew) {
+      setRows((current) => current.filter((r) => rowKey(r) !== key));
+    }
   };
 
   const handleDeleteRow = (row) => {
@@ -158,6 +169,8 @@ function FundingAllocationTable({
                       onChange={(e) => handleCellChange(idx, 'amount', e.target.value)}
                       type="number"
                       size="small"
+                      error={!!row._error}
+                      helperText={row._error || undefined}
                     />
                   ) : (
                     <Typography variant="body2">{formatBIFAmount(row.amount)}</Typography>

@@ -69,3 +69,18 @@ test('ACT-S3: social_protection beneficiary rights 170001-170004 grant no PTBA a
   assert.equal(canDeletePtbaFromList(BENEFICIARY, { status: 'DRAFT' }), false);
   assert.equal(ptbaPermissions(BENEFICIARY, null, true).canView, false);
 });
+
+test('ACT-B-R3: an activity of a CLOSED PTBA cannot be edited, deleted or given sous-activites', () => {
+  const underPtba = (status) => ({
+    status: 'PLANIFIE',
+    sousComposante: { composante: { ptba: { status } } },
+  });
+  const closed = activityPermissions(ALL, underPtba('CLOSED'));
+  for (const flag of ['canEdit', 'canDelete', 'canCreateSousActivite', 'canUpdateSousActivite', 'canDeleteSousActivite']) {
+    assert.equal(closed[flag], false, flag);
+  }
+  const active = activityPermissions(ALL, underPtba('ACTIVE'));
+  for (const flag of ['canEdit', 'canDelete', 'canCreateSousActivite', 'canUpdateSousActivite', 'canDeleteSousActivite']) {
+    assert.equal(active[flag], true, flag);
+  }
+});

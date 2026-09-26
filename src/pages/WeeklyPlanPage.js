@@ -26,6 +26,8 @@ import {
   useModulesManager,
   useTranslations,
   journalize,
+  coreConfirm,
+  clearConfirm,
 } from '@openimis/fe-core';
 import {
   fetchPtbas,
@@ -38,6 +40,7 @@ import {
 } from '../actions';
 import { MODULE_NAME, RIGHT_ACTIVITY_SEARCH } from '../constants';
 import { activityPermissions } from '../utils/permissions';
+import { useOwnedConfirm } from '../utils/useOwnedConfirm';
 import WeeklyStatusBadge from '../components/lifecycle/WeeklyStatusBadge';
 import WeeklyPlanForm from '../components/weekly/WeeklyPlanForm';
 
@@ -197,6 +200,10 @@ function WeeklyPlanPage({
   createWeeklyPlanEntry,
   updateWeeklyPlanEntry,
   deleteWeeklyPlanEntry,
+  confirm,
+  confirmed,
+  coreConfirm,
+  clearConfirm,
 }) {
   const modulesManager = useModulesManager();
   const classes = useStyles();
@@ -209,6 +216,7 @@ function WeeklyPlanPage({
   const [editingSousActiviteId, setEditingSousActiviteId] = useState(null);
   const [editingSousActiviteName, setEditingSousActiviteName] = useState('');
   const prevSubmittingMutationRef = useRef();
+  const askConfirm = useOwnedConfirm(confirm, confirmed, coreConfirm, clearConfirm);
 
   useEffect(() => {
     fetchPtbas(modulesManager, ['first: 100']);
@@ -295,12 +303,24 @@ function WeeklyPlanPage({
     setEditingEntry(null);
   };
 
-  const handleDelete = (entry) => {
-    if (entry?.id) {
-      deleteWeeklyPlanEntry(entry, formatMessage('weeklyPlan.mutation.deleteLabel'));
-    }
+  const closeForm = () => {
     setFormOpen(false);
     setEditingEntry(null);
+  };
+
+  const handleDelete = (entry) => {
+    if (!entry?.id) {
+      closeForm();
+      return;
+    }
+    askConfirm(
+      formatMessage('weeklyPlan.delete.confirm.title'),
+      formatMessage('weeklyPlan.delete.confirm.message'),
+      () => {
+        deleteWeeklyPlanEntry(entry, formatMessage('weeklyPlan.mutation.deleteLabel'));
+        closeForm();
+      },
+    );
   };
 
   return (
@@ -495,6 +515,8 @@ const mapStateToProps = (state) => ({
   errorWeeklyPlan: state.activity.errorWeeklyPlan,
   submittingMutation: state.activity.submittingMutation,
   mutation: state.activity.mutation,
+  confirm: state.core.confirm,
+  confirmed: state.core.confirmed,
 });
 
 const mapDispatchToProps = (dispatch) => bindActionCreators({
@@ -506,6 +528,8 @@ const mapDispatchToProps = (dispatch) => bindActionCreators({
   updateWeeklyPlanEntry,
   deleteWeeklyPlanEntry,
   journalize,
+  coreConfirm,
+  clearConfirm,
 }, dispatch);
 
 export default connect(mapStateToProps, mapDispatchToProps)(WeeklyPlanPage);

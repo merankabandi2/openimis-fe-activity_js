@@ -730,6 +730,8 @@ function reducer(state = STORE_STATE, action) {
       return dispatchMutationReq(state, action);
     case ERROR(ACTION_TYPE.MUTATION):
       return dispatchMutationErr(state, action);
+    case `${ACTION_TYPE.MUTATION}_FAILED`:
+      return { ...state, submittingMutation: false, mutation: { ...state.mutation, ...action.meta } };
 
     default:
       return state;

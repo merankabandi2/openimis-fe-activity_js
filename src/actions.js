@@ -1,4 +1,6 @@
 import {
+  coreAlert,
+  fetchMutation,
   formatGQLString,
   formatMutation,
   formatPageQuery,
@@ -7,6 +9,12 @@ import {
   graphql,
 } from '@openimis/fe-core';
 import { collectAllPages, MAX_PAGE_SIZE } from './utils/pagination';
+import {
+  MUTATION_STATUS,
+  graphQLErrorMessages,
+  mutationErrorMessages,
+  pollMutationLog,
+} from './utils/mutation-outcome';
 
 const REQUEST = (actionType) => `${actionType}_REQ`;
 const SUCCESS = (actionType) => `${actionType}_RESP`;
@@ -235,7 +243,7 @@ const ACTIVITE_FULL_PROJECTION = () => [
   'jsonExt',
   'revisionStatus',
   'revisionComment',
-  'sousComposante { id code name composante { id code name ptba { id code name } } }',
+  'sousComposante { id code name composante { id code name ptba { id code name status } } }',
   'sousActivites { edges { node { id code name unit quantityTotal quantityT1 quantityT2 quantityT3 quantityT4 unitCost budgetT1 budgetT2 budgetT3 budgetT4 budgetTotal expenseCategoryCode expenseCategory sortOrder quantityInitial quantityRevised unitCostInitial unitCostRevised budgetInitial budgetRevised dateStart dateEnd responsible intervenants revisionStatus revisionComment fundingAllocations { edges { node { id fundingSource { id code name } amount } } } } } }',
   'indicators { edges { node { id name baseline target achievements { edges { node { achieved date timestamp } } } } } }',
 ];
@@ -296,19 +304,45 @@ const FUNDING_SOURCE_PROJECTION = () => [
 
 // --- Mutation helper ---
 
-const PERFORM_MUTATION = (mutationType, mutationInput, ACTION, clientMutationLabel) => {
+const SENT = (actionType) => `${actionType}_SENT`;
+const FAILED = (actionType) => `${actionType}_FAILED`;
+
+/**
+ * Sends a mutation, then reads its MutationLog outcome before dispatching
+ * SUCCESS(ACTION), so the pages that refetch when submittingMutation drops
+ * already know whether it was refused. A refusal (MutationLog status 1) or a
+ * GraphQL-level error opens the fe-core alert with its messages; the journal
+ * drawer is not needed to see it. Resolves to { status, messages }.
+ */
+const PERFORM_MUTATION = (mutationType, mutationInput, ACTION, clientMutationLabel) => async (dispatch) => {
   const mutation = formatMutation(mutationType, mutationInput, clientMutationLabel);
-  const requestedDateTime = new Date();
-  return graphql(
+  const meta = {
+    actionType: ACTION,
+    clientMutationId: mutation.clientMutationId,
+    clientMutationLabel,
+    requestedDateTime: new Date(),
+  };
+  const response = await dispatch(graphql(
     mutation.payload,
-    [REQUEST(ACTION_TYPE.MUTATION), SUCCESS(ACTION), ERROR(ACTION_TYPE.MUTATION)],
-    {
-      actionType: ACTION,
-      clientMutationId: mutation.clientMutationId,
-      clientMutationLabel,
-      requestedDateTime,
-    },
-  );
+    [REQUEST(ACTION_TYPE.MUTATION), SENT(ACTION_TYPE.MUTATION), ERROR(ACTION_TYPE.MUTATION)],
+    meta,
+  ));
+  if (!response?.payload?.data?.[mutationType]) {
+    // No MutationLog was written (transport or GraphQL error); fe-core's
+    // graphql already alerts on transport errors.
+    const messages = graphQLErrorMessages(response?.payload);
+    if (messages.length) dispatch(coreAlert(clientMutationLabel, messages));
+    dispatch({ type: FAILED(ACTION_TYPE.MUTATION), meta: { ...meta, status: MUTATION_STATUS.ERROR, messages } });
+    return { status: MUTATION_STATUS.ERROR, messages };
+  }
+  const log = await pollMutationLog(dispatch, fetchMutation, mutation.clientMutationId);
+  const status = log?.status ?? MUTATION_STATUS.RECEIVED;
+  const messages = status === MUTATION_STATUS.ERROR ? mutationErrorMessages(log.error) : [];
+  dispatch({ type: SUCCESS(ACTION), payload: response.payload, meta: { ...meta, status, messages } });
+  if (status === MUTATION_STATUS.ERROR) {
+    dispatch(coreAlert(clientMutationLabel, messages.length ? messages : [clientMutationLabel]));
+  }
+  return { status, messages };
 };
 
 const PAGE_TYPES = (actionType) => [
@@ -583,7 +617,7 @@ const formatSousActiviteGQL = (sa) => `
   ${sa?.unitCostInitial != null ? `unitCostInitial: "${sa.unitCostInitial}"` : ''}
   ${sa?.unitCostRevised != null ? `unitCostRevised: "${sa.unitCostRevised}"` : ''}
   ${sa?.budgetInitial != null ? `budgetInitial: "${sa.budgetInitial}"` : ''}
-  ${sa?.budgetRevised != null ? `budgetRevised: "${sa.budgetRevised}"` : ''}
+  ${sa?.budgetRevised != null && sa.budgetRevised !== '' ? `budgetRevised: "${sa.budgetRevised}"` : ''}
   ${sa?.dateStart ? `dateStart: "${sa.dateStart}"` : ''}
   ${sa?.dateEnd ? `dateEnd: "${sa.dateEnd}"` : ''}
   ${sa?.responsible ? `responsible: "${formatGQLString(sa.responsible)}"` : ''}

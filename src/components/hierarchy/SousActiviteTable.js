@@ -39,9 +39,11 @@ import {
   rejectRevision,
 } from '../../actions';
 import { MODULE_NAME } from '../../constants';
-import { formatBIFAmount } from '../../utils/string-utils';
+import { formatBIFAmount, formatDecimal } from '../../utils/string-utils';
 import { useOwnedConfirm } from '../../utils/useOwnedConfirm';
-import { displayedBudgets, sousActiviteUpdatePayload } from '../../utils/sous-activite';
+import { displayedBudgets, emptySousActiviteRow, sousActiviteUpdatePayload } from '../../utils/sous-activite';
+import { budgetEcart } from '../../utils/budget';
+import { stopRowClick } from '../../utils/events';
 import RevisionStatusBadge from '../lifecycle/RevisionStatusBadge';
 
 const useStyles = makeStyles((theme) => ({
@@ -89,27 +91,8 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const EMPTY_ROW = {
-  id: null,
-  name: '',
-  unit: '',
-  quantityT1: 0,
-  quantityT2: 0,
-  quantityT3: 0,
-  quantityT4: 0,
-  unitCost: 0,
-  quantityInitial: 0,
-  quantityRevised: 0,
-  unitCostInitial: 0,
-  unitCostRevised: 0,
-  budgetInitial: 0,
-  budgetRevised: 0,
-  dateStart: '',
-  dateEnd: '',
-  responsible: '',
-  revisionStatus: 'INITIAL',
-  revisionComment: '',
-};
+// SousActivite.code is CharField(max_length=20).
+const CODE_MAX_LENGTH = 20;
 
 function SousActiviteTable({
   activiteId,
@@ -159,7 +142,7 @@ function SousActiviteTable({
 
   const handleAddRow = () => {
     const newRow = {
-      ...EMPTY_ROW,
+      ...emptySousActiviteRow(),
       _isNew: true,
       _tempId: `new-${Date.now()}`,
       sortOrder: rows.length,
@@ -255,11 +238,11 @@ function SousActiviteTable({
     return editingRowId === row.id;
   };
 
-  const renderEditableCell = (row, rowIndex, field, type) => {
+  const renderEditableCell = (row, rowIndex, field, type, maxLength) => {
     if (!canEditRow(row) || !isEditing(row)) {
       const val = row[field];
       if (type === 'number') {
-        return <Typography variant="body2">{formatBIFAmount(val)}</Typography>;
+        return <Typography variant="body2">{formatDecimal(val)}</Typography>;
       }
       return <Typography variant="body2">{val}</Typography>;
     }
@@ -268,17 +251,11 @@ function SousActiviteTable({
         value={row[field] ?? ''}
         onChange={(e) => handleCellChange(rowIndex, field, e.target.value)}
         type={type || 'text'}
-        inputProps={{ className: classes.input }}
+        inputProps={{ className: classes.input, maxLength }}
         size="small"
         fullWidth
       />
     );
-  };
-
-  const computeEcart = (row) => {
-    const budgetRevised = parseFloat(row.budgetRevised) || 0;
-    const budgetInitial = parseFloat(row.budgetInitial) || 0;
-    return budgetRevised - budgetInitial;
   };
 
   const getEcartClass = (ecart) => {
@@ -293,6 +270,7 @@ function SousActiviteTable({
         <Table size="small" className={classes.table}>
           <TableHead>
             <TableRow>
+              <TableCell className={classes.headerCell}>{formatMessage('sousActivite.code')}</TableCell>
               <TableCell className={classes.headerCell}>{formatMessage('sousActivite.name')}</TableCell>
               <TableCell className={classes.headerCell}>{formatMessage('sousActivite.unit')}</TableCell>
               <TableCell className={classes.headerCell} align="right">{formatMessage('field.quantityInitial')}</TableCell>
@@ -327,7 +305,7 @@ function SousActiviteTable({
               const {
                 budgetT1: b1, budgetT2: b2, budgetT3: b3, budgetT4: b4, budgetTotal: total,
               } = displayedBudgets(row, originals[row.id]);
-              const ecart = computeEcart(row);
+              const ecart = budgetEcart(row);
 
               return (
                 <TableRow
@@ -335,6 +313,9 @@ function SousActiviteTable({
                   hover
                   onClick={() => canEditRow(row) && setEditingRowId(row.id || row._tempId)}
                 >
+                  <TableCell className={classes.cell}>
+                    {renderEditableCell(row, idx, 'code', 'text', CODE_MAX_LENGTH)}
+                  </TableCell>
                   <TableCell className={classes.cell}>
                     {renderEditableCell(row, idx, 'name', 'text')}
                   </TableCell>
@@ -415,35 +396,35 @@ function SousActiviteTable({
                     <TableCell className={classes.cell} align="center">
                       {isEditing(row) && (
                         <Tooltip title={formatMessage('tooltip.save')}>
-                          <IconButton size="small" onClick={() => handleSaveRow(row, idx)}>
+                          <IconButton size="small" onClick={stopRowClick(() => handleSaveRow(row, idx))}>
                             <SaveIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
                       )}
                       {!row._isNew && canBeginRevision && row.revisionStatus !== 'REVISE' && (
                         <Tooltip title={formatMessage('revision.begin')}>
-                          <IconButton size="small" onClick={() => handleBeginRevision(row)}>
+                          <IconButton size="small" onClick={stopRowClick(() => handleBeginRevision(row))}>
                             <EditIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
                       )}
                       {!row._isNew && canDecideRevision && row.revisionStatus === 'REVISE' && (
                         <Tooltip title={formatMessage('revision.approve')}>
-                          <IconButton size="small" onClick={() => handleApproveRevision(row)}>
+                          <IconButton size="small" onClick={stopRowClick(() => handleApproveRevision(row))}>
                             <CheckCircleIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
                       )}
                       {!row._isNew && canDecideRevision && row.revisionStatus === 'REVISE' && (
                         <Tooltip title={formatMessage('revision.reject')}>
-                          <IconButton size="small" onClick={() => handleRejectRevision(row)}>
+                          <IconButton size="small" onClick={stopRowClick(() => handleRejectRevision(row))}>
                             <CancelIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
                       )}
                       {(row._isNew || canDelete) && (
                         <Tooltip title={formatMessage('tooltip.delete')}>
-                          <IconButton size="small" onClick={() => handleDeleteRow(row)}>
+                          <IconButton size="small" onClick={stopRowClick(() => handleDeleteRow(row))}>
                             <DeleteIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
@@ -454,8 +435,8 @@ function SousActiviteTable({
               );
             })}
             <TableRow className={classes.totalRow}>
-              {/* colSpan must match the number of data columns before budgetTotal (columns 1-23) */}
-              <TableCell className={classes.cell} colSpan={23}>
+              {/* colSpan must match the number of data columns before budgetTotal (columns 1-24) */}
+              <TableCell className={classes.cell} colSpan={24}>
                 <Typography variant="body2" style={{ fontWeight: 'bold' }}>
                   {formatMessage('total')}
                 </Typography>

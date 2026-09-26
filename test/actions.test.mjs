@@ -11,6 +11,7 @@ import {
   fetchQuarterlyExecutions,
   fetchTransitionHistory,
 } from '../src/actions.js';
+import { mutationDocument } from './support/mutation-dispatch.mjs';
 
 const UUID = '00000000-0000-4000-8000-000000000001';
 
@@ -25,8 +26,8 @@ function fakeDispatch(respond, log = []) {
   return dispatch;
 }
 
-test('ACT-S8: allocateFunding sends no id argument (the input type has none)', () => {
-  const { payload } = allocateFunding({ id: UUID, sousActiviteId: UUID, fundingSourceId: UUID, amount: 10 }, 'x');
+test('ACT-S8: allocateFunding sends no id argument (the input type has none)', async () => {
+  const payload = await mutationDocument(allocateFunding({ id: UUID, sousActiviteId: UUID, fundingSourceId: UUID, amount: 10 }, 'x'));
   assert.doesNotMatch(payload, /\bid: "/);
   assert.match(payload, /sousActiviteId: "/);
   assert.match(payload, /fundingSourceId: "/);
@@ -91,9 +92,14 @@ test('DEF-E-07: a GraphQL error on a page reaches the reducer as the list error'
   assert.deepEqual(success.payload.errors, [{ message: 'boom' }]);
 });
 
-test('ACT-S12: PTBA create and update send no status (it changes only through transitions)', () => {
+test('ACT-S12: PTBA create and update send no status (it changes only through transitions)', async () => {
   const ptba = { id: UUID, code: 'P', name: 'N', fiscalYearStart: '2026-01-01', fiscalYearEnd: '2026-12-31', status: 'ACTIVE' };
   for (const action of [createPtba({ ...ptba, id: null }, 'x'), updatePtba(ptba, 'x')]) {
-    assert.doesNotMatch(JSON.stringify(action), /status:/);
+    assert.doesNotMatch(await mutationDocument(action), /status:/);
   }
+});
+
+test('ACT-B-R3: the activity query asks the status of its PTBA', () => {
+  const { payload } = fetchActivite(null, [`id: "${UUID}"`]);
+  assert.match(payload, /ptba \{ id code name status \}/);
 });
