@@ -45,8 +45,9 @@ export const canDeletePtbaFromList = (rights, ptba) => (
 /**
  * What the activity screen lets the user do, per action, with the right
  * each backend mutation checks. A CLOTURE activity is read-only. Under a
- * CLOSED PTBA the activity and its sous-activites cannot be edited, created
- * or deleted (the backend refuses those mutations).
+ * CLOSED PTBA the whole activity is read-only: no edit, sous-activite,
+ * lifecycle transition, revision, execution report, funding, indicator link
+ * or weekly-plan change (the backend refuses those mutations).
  */
 export function activityPermissions(rights, activite) {
   const open = activite?.status !== ACTIVITY_STATUS.CLOTURE;
@@ -58,15 +59,17 @@ export function activityPermissions(rights, activite) {
     canCreateSousActivite: editable && holds(rights, RIGHT_ACTIVITY_CREATE),
     canUpdateSousActivite: editable && holds(rights, RIGHT_ACTIVITY_UPDATE),
     canDeleteSousActivite: editable && holds(rights, RIGHT_ACTIVITY_DELETE),
-    canBeginRevision: open && holds(rights, RIGHT_ACTIVITY_UPDATE),
-    canDecideRevision: open && holds(rights, RIGHT_EXECUTION_APPROVE),
-    canReportExecution: activite?.status === ACTIVITY_STATUS.EN_COURS
+    // Each transition also needs its own right (TransitionButton).
+    canTransition: editable,
+    canBeginRevision: editable && holds(rights, RIGHT_ACTIVITY_UPDATE),
+    canDecideRevision: editable && holds(rights, RIGHT_EXECUTION_APPROVE),
+    canReportExecution: ptbaOpen && activite?.status === ACTIVITY_STATUS.EN_COURS
       && holds(rights, RIGHT_EXECUTION_REPORT),
-    canManageFunding: open && holds(rights, RIGHT_FUNDING_MANAGE),
-    canLinkIndicators: open && holds(rights, RIGHT_ACTIVITY_UPDATE),
-    canCreateWeekly: open && holds(rights, RIGHT_ACTIVITY_CREATE),
-    canUpdateWeekly: open && holds(rights, RIGHT_ACTIVITY_UPDATE),
-    canDeleteWeekly: open && holds(rights, RIGHT_ACTIVITY_DELETE),
+    canManageFunding: editable && holds(rights, RIGHT_FUNDING_MANAGE),
+    canLinkIndicators: editable && holds(rights, RIGHT_ACTIVITY_UPDATE),
+    canCreateWeekly: editable && holds(rights, RIGHT_ACTIVITY_CREATE),
+    canUpdateWeekly: editable && holds(rights, RIGHT_ACTIVITY_UPDATE),
+    canDeleteWeekly: editable && holds(rights, RIGHT_ACTIVITY_DELETE),
   };
 }
 
