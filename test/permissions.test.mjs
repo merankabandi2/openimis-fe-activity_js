@@ -84,3 +84,29 @@ test('ACT-B-R3: an activity of a CLOSED PTBA cannot be edited, deleted or given 
     assert.equal(active[flag], true, flag);
   }
 });
+
+test('ACT-B-F1: under a CLOSED PTBA no lifecycle, revision, execution, funding, indicator or weekly action is offered', () => {
+  const underPtba = (ptbaStatus, status = 'PLANIFIE') => ({
+    status,
+    sousComposante: { composante: { ptba: { status: ptbaStatus } } },
+  });
+  const flags = [
+    'canTransition', 'canBeginRevision', 'canDecideRevision', 'canManageFunding',
+    'canLinkIndicators', 'canCreateWeekly', 'canUpdateWeekly', 'canDeleteWeekly',
+  ];
+  const closed = activityPermissions(ALL, underPtba('CLOSED'));
+  for (const flag of flags) {
+    assert.equal(closed[flag], false, flag);
+  }
+  assert.equal(activityPermissions(ALL, underPtba('CLOSED', 'EN_COURS')).canReportExecution, false);
+
+  const active = activityPermissions(ALL, underPtba('ACTIVE'));
+  for (const flag of flags) {
+    assert.equal(active[flag], true, flag);
+  }
+  assert.equal(activityPermissions(ALL, underPtba('ACTIVE', 'EN_COURS')).canReportExecution, true);
+});
+
+test('ACT-B-F1: a CLOTURE activity offers no transition', () => {
+  assert.equal(activityPermissions(ALL, { status: 'CLOTURE' }).canTransition, false);
+});

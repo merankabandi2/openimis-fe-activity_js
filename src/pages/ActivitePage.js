@@ -308,7 +308,7 @@ function ActivitePage({
               </IconButton>
             </>
           )}
-          {activite && !editMode && (
+          {activite && !editMode && permissions.canTransition && (
             <TransitionButton
               activite={activite}
               rights={rights}
