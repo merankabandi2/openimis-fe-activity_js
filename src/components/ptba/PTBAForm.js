@@ -9,8 +9,10 @@ import {
   withModulesManager,
   TextInput,
   PublishedComponent,
+  formatMessage,
 } from '@openimis/fe-core';
-import { PTBA_STATUS_LIST } from '../../constants';
+import { MODULE_NAME } from '../../constants';
+import { ptbaStatusMessageKey } from '../../utils/ptba-status';
 
 const styles = (theme) => ({
   tableTitle: theme.table.title,
@@ -26,6 +28,7 @@ class PTBAForm extends FormPanel {
       edited,
       classes,
       readOnly,
+      intl,
     } = this.props;
     const ptba = { ...edited };
 
@@ -78,7 +81,7 @@ class PTBAForm extends FormPanel {
             module="activity"
             label="ptba.status"
             readOnly
-            value={ptba?.status ?? 'DRAFT'}
+            value={formatMessage(intl, MODULE_NAME, ptbaStatusMessageKey(ptba?.status))}
           />
         </Grid>
       </Grid>
