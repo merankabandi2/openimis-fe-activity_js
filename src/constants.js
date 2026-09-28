@@ -174,20 +174,20 @@ export const TRANSITION_LABELS = {
   REALISE_EN_COURS: 'transition.reouvrir',
 };
 
-// --- Rights (170005-170017; 170001-170004 are social_protection beneficiary rights) ---
-export const RIGHT_PTBA_SEARCH = 170014;
-export const RIGHT_PTBA_CREATE = 170015;
-export const RIGHT_PTBA_UPDATE = 170016;
-export const RIGHT_PTBA_DELETE = 170017;
-export const RIGHT_ACTIVITY_SEARCH = 170005;
-export const RIGHT_ACTIVITY_CREATE = 170006;
-export const RIGHT_ACTIVITY_UPDATE = 170007;
-export const RIGHT_ACTIVITY_DELETE = 170008;
-export const RIGHT_EXECUTION_REPORT = 170009;
-export const RIGHT_EXECUTION_APPROVE = 170010;
-export const RIGHT_TRANSITION = 170011;
-export const RIGHT_DASHBOARD_VIEW = 170012;
-export const RIGHT_FUNDING_MANAGE = 170013;
+// --- Rights (802005-802017; 170001-170004 are social_protection beneficiary rights) ---
+export const RIGHT_PTBA_SEARCH = 802014;
+export const RIGHT_PTBA_CREATE = 802015;
+export const RIGHT_PTBA_UPDATE = 802016;
+export const RIGHT_PTBA_DELETE = 802017;
+export const RIGHT_ACTIVITY_SEARCH = 802005;
+export const RIGHT_ACTIVITY_CREATE = 802006;
+export const RIGHT_ACTIVITY_UPDATE = 802007;
+export const RIGHT_ACTIVITY_DELETE = 802008;
+export const RIGHT_EXECUTION_REPORT = 802009;
+export const RIGHT_EXECUTION_APPROVE = 802010;
+export const RIGHT_TRANSITION = 802011;
+export const RIGHT_DASHBOARD_VIEW = 802012;
+export const RIGHT_FUNDING_MANAGE = 802013;
 
 export const TRANSITION_RIGHTS = {
   PLANIFIE_BUDGETISE: RIGHT_PTBA_UPDATE,

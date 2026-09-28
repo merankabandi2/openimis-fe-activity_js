@@ -5,11 +5,11 @@ import {
   ptbaPermissions, activityPermissions, canDeletePtbaFromList, ptbaDatesValid,
 } from '../src/utils/permissions.js';
 
-// Right sets of the UAT PTBA roles; the PTBA rights are 170014-170017.
-const LECTURE = [170014, 170005, 170012];
-const SAISIE = [170014, 170015, 170016, 170005, 170006, 170007];
-const EXECUTION = [170014, 170005, 170009];
-const ALL = Array.from({ length: 13 }, (_, i) => 170005 + i);
+// Right sets of the UAT PTBA roles; the PTBA rights are 802014-802017.
+const LECTURE = [802014, 802005, 802012];
+const SAISIE = [802014, 802015, 802016, 802005, 802006, 802007];
+const EXECUTION = [802014, 802005, 802009];
+const ALL = Array.from({ length: 13 }, (_, i) => 802005 + i);
 // Social_protection beneficiary rights only (e.g. « Responsable Transferts Monétaires »).
 const BENEFICIARY = [170001, 170002, 170003, 170004];
 
