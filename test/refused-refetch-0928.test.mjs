@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { allocateFunding, ACTION_TYPE } from '../src/actions.js';
 import reducer from '../src/reducer.js';
 import { mutationWasRefused, MUTATION_STATUS } from '../src/utils/mutation-outcome.js';
+import { mergeAllocationRows } from '../src/utils/funding.js';
 import { mutationDispatch } from './support/mutation-dispatch.mjs';
 
 const UUID = '00000000-0000-4000-8000-000000000001';
@@ -75,4 +76,13 @@ test('ACT-CLOSE-0928-01: the next mutation request drops the previous refusal', 
     meta: { actionType: ACTION_TYPE.ALLOCATE_FUNDING, clientMutationId: 'y' },
   });
   assert.equal(mutationWasRefused(next.mutation), false);
+});
+
+test('ACT-CLOSE-0928-01: an edited stored row keeps its typed amount through the re-render the save request causes', () => {
+  const stored = [{ id: 'a1', fundingSource: { id: 'fs1' }, amount: '1000.00' }];
+  const typed = [{ id: 'a1', fundingSource: { id: 'fs1' }, amount: '50000', _edited: true, _error: null }];
+  const rows = mergeAllocationRows(stored, typed);
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].amount, '50000');
+  assert.equal(rows[0]._edited, true);
 });
