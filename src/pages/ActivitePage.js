@@ -47,6 +47,7 @@ import {
 } from '../constants';
 import { activityPermissions } from '../utils/permissions';
 import { useOwnedConfirm } from '../utils/useOwnedConfirm';
+import { mutationWasRefused } from '../utils/mutation-outcome';
 import SousActiviteTable from '../components/hierarchy/SousActiviteTable';
 import FundingAllocationTable from '../components/funding/FundingAllocationTable';
 import StatusBadge from '../components/lifecycle/StatusBadge';
@@ -139,7 +140,10 @@ function ActivitePage({
         } else {
           history.goBack();
         }
-      } else if (activiteId) {
+      } else if (activiteId && !mutationWasRefused(mutation)) {
+        // A refused mutation changed nothing. A refetch would empty
+        // state.activity.activite, remount the funding tables and drop the
+        // rows typed before the refused save.
         fetchActivite(modulesManager, [`id: "${activiteId}"`]);
       }
     }
