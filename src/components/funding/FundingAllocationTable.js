@@ -92,7 +92,7 @@ function FundingAllocationTable({
 
   const handleCellChange = (rowIndex, field, value) => {
     const newRows = [...rows];
-    newRows[rowIndex] = { ...newRows[rowIndex], [field]: value, _error: null };
+    newRows[rowIndex] = { ...newRows[rowIndex], [field]: value, _edited: true, _error: null };
     setRows(newRows);
   };
 

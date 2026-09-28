@@ -26,6 +26,22 @@ export function mutationErrorMessages(error) {
     .map(String);
 }
 
+/**
+ * state.mutation with the outcome PERFORM_MUTATION read (meta.status,
+ * meta.messages) under `outcome`: fe-core's journalize sets
+ * `mutation.status` to 0 on the object it receives.
+ */
+export const withOutcome = (mutation, meta) => ({
+  ...mutation,
+  outcome: {
+    status: meta?.status ?? MUTATION_STATUS.RECEIVED,
+    messages: meta?.messages || [],
+  },
+});
+
+/** True when the server refused the mutation: nothing changed, no reload is due. */
+export const mutationWasRefused = (mutation) => mutation?.outcome?.status === MUTATION_STATUS.ERROR;
+
 /** Messages of a GraphQL response that carries `errors`. */
 export const graphQLErrorMessages = (payload) => (payload?.errors || [])
   .map((e) => e?.message)

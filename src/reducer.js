@@ -10,11 +10,20 @@ import {
 } from '@openimis/fe-core';
 import { ACTION_TYPE, MUTATION_SERVICE } from './actions';
 import { decodeNestedIds } from './utils/relay';
+import { withOutcome } from './utils/mutation-outcome';
 
 const REQUEST = (actionType) => `${actionType}_REQ`;
 const SUCCESS = (actionType) => `${actionType}_RESP`;
 const ERROR = (actionType) => `${actionType}_ERR`;
 const CLEAR = (actionType) => `${actionType}_CLEAR`;
+
+// fe-core's dispatchMutationResp, plus the MutationLog outcome that
+// PERFORM_MUTATION sends in action.meta, in the same state update that ends
+// submittingMutation.
+const mutationResp = (state, service, action) => {
+  const next = dispatchMutationResp(state, service, action);
+  return { ...next, mutation: withOutcome(next.mutation, action.meta) };
+};
 
 const STORE_STATE = {
   submittingMutation: false,
@@ -379,11 +388,11 @@ function reducer(state = STORE_STATE, action) {
     case ERROR(ACTION_TYPE.DELETE_PTBA):
       return dispatchMutationErr(state, action);
     case SUCCESS(ACTION_TYPE.CREATE_PTBA):
-      return dispatchMutationResp(state, MUTATION_SERVICE.PTBA.CREATE, action);
+      return mutationResp(state, MUTATION_SERVICE.PTBA.CREATE, action);
     case SUCCESS(ACTION_TYPE.UPDATE_PTBA):
-      return dispatchMutationResp(state, MUTATION_SERVICE.PTBA.UPDATE, action);
+      return mutationResp(state, MUTATION_SERVICE.PTBA.UPDATE, action);
     case SUCCESS(ACTION_TYPE.DELETE_PTBA):
-      return dispatchMutationResp(state, MUTATION_SERVICE.PTBA.DELETE, action);
+      return mutationResp(state, MUTATION_SERVICE.PTBA.DELETE, action);
 
     // --- Composante mutations ---
     case REQUEST(ACTION_TYPE.CREATE_COMPOSANTE):
@@ -395,11 +404,11 @@ function reducer(state = STORE_STATE, action) {
     case ERROR(ACTION_TYPE.DELETE_COMPOSANTE):
       return dispatchMutationErr(state, action);
     case SUCCESS(ACTION_TYPE.CREATE_COMPOSANTE):
-      return dispatchMutationResp(state, MUTATION_SERVICE.COMPOSANTE.CREATE, action);
+      return mutationResp(state, MUTATION_SERVICE.COMPOSANTE.CREATE, action);
     case SUCCESS(ACTION_TYPE.UPDATE_COMPOSANTE):
-      return dispatchMutationResp(state, MUTATION_SERVICE.COMPOSANTE.UPDATE, action);
+      return mutationResp(state, MUTATION_SERVICE.COMPOSANTE.UPDATE, action);
     case SUCCESS(ACTION_TYPE.DELETE_COMPOSANTE):
-      return dispatchMutationResp(state, MUTATION_SERVICE.COMPOSANTE.DELETE, action);
+      return mutationResp(state, MUTATION_SERVICE.COMPOSANTE.DELETE, action);
 
     // --- SousComposante mutations ---
     case REQUEST(ACTION_TYPE.CREATE_SOUS_COMPOSANTE):
@@ -411,11 +420,11 @@ function reducer(state = STORE_STATE, action) {
     case ERROR(ACTION_TYPE.DELETE_SOUS_COMPOSANTE):
       return dispatchMutationErr(state, action);
     case SUCCESS(ACTION_TYPE.CREATE_SOUS_COMPOSANTE):
-      return dispatchMutationResp(state, MUTATION_SERVICE.SOUS_COMPOSANTE.CREATE, action);
+      return mutationResp(state, MUTATION_SERVICE.SOUS_COMPOSANTE.CREATE, action);
     case SUCCESS(ACTION_TYPE.UPDATE_SOUS_COMPOSANTE):
-      return dispatchMutationResp(state, MUTATION_SERVICE.SOUS_COMPOSANTE.UPDATE, action);
+      return mutationResp(state, MUTATION_SERVICE.SOUS_COMPOSANTE.UPDATE, action);
     case SUCCESS(ACTION_TYPE.DELETE_SOUS_COMPOSANTE):
-      return dispatchMutationResp(state, MUTATION_SERVICE.SOUS_COMPOSANTE.DELETE, action);
+      return mutationResp(state, MUTATION_SERVICE.SOUS_COMPOSANTE.DELETE, action);
 
     // --- Activite mutations ---
     case REQUEST(ACTION_TYPE.CREATE_ACTIVITE):
@@ -427,11 +436,11 @@ function reducer(state = STORE_STATE, action) {
     case ERROR(ACTION_TYPE.DELETE_ACTIVITE):
       return dispatchMutationErr(state, action);
     case SUCCESS(ACTION_TYPE.CREATE_ACTIVITE):
-      return dispatchMutationResp(state, MUTATION_SERVICE.ACTIVITE.CREATE, action);
+      return mutationResp(state, MUTATION_SERVICE.ACTIVITE.CREATE, action);
     case SUCCESS(ACTION_TYPE.UPDATE_ACTIVITE):
-      return dispatchMutationResp(state, MUTATION_SERVICE.ACTIVITE.UPDATE, action);
+      return mutationResp(state, MUTATION_SERVICE.ACTIVITE.UPDATE, action);
     case SUCCESS(ACTION_TYPE.DELETE_ACTIVITE):
-      return dispatchMutationResp(state, MUTATION_SERVICE.ACTIVITE.DELETE, action);
+      return mutationResp(state, MUTATION_SERVICE.ACTIVITE.DELETE, action);
 
     // --- SousActivite mutations ---
     case REQUEST(ACTION_TYPE.CREATE_SOUS_ACTIVITE):
@@ -443,11 +452,11 @@ function reducer(state = STORE_STATE, action) {
     case ERROR(ACTION_TYPE.DELETE_SOUS_ACTIVITE):
       return dispatchMutationErr(state, action);
     case SUCCESS(ACTION_TYPE.CREATE_SOUS_ACTIVITE):
-      return dispatchMutationResp(state, MUTATION_SERVICE.SOUS_ACTIVITE.CREATE, action);
+      return mutationResp(state, MUTATION_SERVICE.SOUS_ACTIVITE.CREATE, action);
     case SUCCESS(ACTION_TYPE.UPDATE_SOUS_ACTIVITE):
-      return dispatchMutationResp(state, MUTATION_SERVICE.SOUS_ACTIVITE.UPDATE, action);
+      return mutationResp(state, MUTATION_SERVICE.SOUS_ACTIVITE.UPDATE, action);
     case SUCCESS(ACTION_TYPE.DELETE_SOUS_ACTIVITE):
-      return dispatchMutationResp(state, MUTATION_SERVICE.SOUS_ACTIVITE.DELETE, action);
+      return mutationResp(state, MUTATION_SERVICE.SOUS_ACTIVITE.DELETE, action);
 
     // --- Funding allocation mutation ---
     case REQUEST(ACTION_TYPE.ALLOCATE_FUNDING):
@@ -455,7 +464,7 @@ function reducer(state = STORE_STATE, action) {
     case ERROR(ACTION_TYPE.ALLOCATE_FUNDING):
       return dispatchMutationErr(state, action);
     case SUCCESS(ACTION_TYPE.ALLOCATE_FUNDING):
-      return dispatchMutationResp(state, MUTATION_SERVICE.FUNDING.ALLOCATE, action);
+      return mutationResp(state, MUTATION_SERVICE.FUNDING.ALLOCATE, action);
 
     // --- Transition history ---
     case REQUEST(ACTION_TYPE.GET_TRANSITION_HISTORY):
@@ -543,7 +552,7 @@ function reducer(state = STORE_STATE, action) {
     case ERROR(ACTION_TYPE.TRANSITION_ACTIVITY):
       return dispatchMutationErr(state, action);
     case SUCCESS(ACTION_TYPE.TRANSITION_ACTIVITY):
-      return dispatchMutationResp(state, MUTATION_SERVICE.LIFECYCLE.TRANSITION, action);
+      return mutationResp(state, MUTATION_SERVICE.LIFECYCLE.TRANSITION, action);
 
     // --- Execution report mutation ---
     case REQUEST(ACTION_TYPE.REPORT_QUARTERLY_EXECUTION):
@@ -551,7 +560,7 @@ function reducer(state = STORE_STATE, action) {
     case ERROR(ACTION_TYPE.REPORT_QUARTERLY_EXECUTION):
       return dispatchMutationErr(state, action);
     case SUCCESS(ACTION_TYPE.REPORT_QUARTERLY_EXECUTION):
-      return dispatchMutationResp(state, MUTATION_SERVICE.EXECUTION.REPORT, action);
+      return mutationResp(state, MUTATION_SERVICE.EXECUTION.REPORT, action);
 
     // --- Indicator link mutations ---
     case REQUEST(ACTION_TYPE.LINK_ACTIVITY_TO_INDICATOR):
@@ -561,9 +570,9 @@ function reducer(state = STORE_STATE, action) {
     case ERROR(ACTION_TYPE.UNLINK_ACTIVITY_FROM_INDICATOR):
       return dispatchMutationErr(state, action);
     case SUCCESS(ACTION_TYPE.LINK_ACTIVITY_TO_INDICATOR):
-      return dispatchMutationResp(state, MUTATION_SERVICE.INDICATOR.LINK, action);
+      return mutationResp(state, MUTATION_SERVICE.INDICATOR.LINK, action);
     case SUCCESS(ACTION_TYPE.UNLINK_ACTIVITY_FROM_INDICATOR):
-      return dispatchMutationResp(state, MUTATION_SERVICE.INDICATOR.UNLINK, action);
+      return mutationResp(state, MUTATION_SERVICE.INDICATOR.UNLINK, action);
 
     // --- Weekly Plan ---
     case REQUEST(ACTION_TYPE.GET_WEEKLY_PLAN_ENTRIES):
@@ -603,11 +612,11 @@ function reducer(state = STORE_STATE, action) {
     case ERROR(ACTION_TYPE.DELETE_WEEKLY_PLAN_ENTRY):
       return dispatchMutationErr(state, action);
     case SUCCESS(ACTION_TYPE.CREATE_WEEKLY_PLAN_ENTRY):
-      return dispatchMutationResp(state, MUTATION_SERVICE.WEEKLY.CREATE, action);
+      return mutationResp(state, MUTATION_SERVICE.WEEKLY.CREATE, action);
     case SUCCESS(ACTION_TYPE.UPDATE_WEEKLY_PLAN_ENTRY):
-      return dispatchMutationResp(state, MUTATION_SERVICE.WEEKLY.UPDATE, action);
+      return mutationResp(state, MUTATION_SERVICE.WEEKLY.UPDATE, action);
     case SUCCESS(ACTION_TYPE.DELETE_WEEKLY_PLAN_ENTRY):
-      return dispatchMutationResp(state, MUTATION_SERVICE.WEEKLY.DELETE, action);
+      return mutationResp(state, MUTATION_SERVICE.WEEKLY.DELETE, action);
 
     // --- Funding deallocation mutation ---
     case REQUEST(ACTION_TYPE.DEALLOCATE_FUNDING):
@@ -615,7 +624,7 @@ function reducer(state = STORE_STATE, action) {
     case ERROR(ACTION_TYPE.DEALLOCATE_FUNDING):
       return dispatchMutationErr(state, action);
     case SUCCESS(ACTION_TYPE.DEALLOCATE_FUNDING):
-      return dispatchMutationResp(state, MUTATION_SERVICE.FUNDING.DEALLOCATE, action);
+      return mutationResp(state, MUTATION_SERVICE.FUNDING.DEALLOCATE, action);
 
     // --- FundingSource CRUD mutations ---
     case REQUEST(ACTION_TYPE.CREATE_FUNDING_SOURCE):
@@ -627,11 +636,11 @@ function reducer(state = STORE_STATE, action) {
     case ERROR(ACTION_TYPE.DELETE_FUNDING_SOURCE):
       return dispatchMutationErr(state, action);
     case SUCCESS(ACTION_TYPE.CREATE_FUNDING_SOURCE):
-      return dispatchMutationResp(state, MUTATION_SERVICE.FUNDING_SOURCE.CREATE, action);
+      return mutationResp(state, MUTATION_SERVICE.FUNDING_SOURCE.CREATE, action);
     case SUCCESS(ACTION_TYPE.UPDATE_FUNDING_SOURCE):
-      return dispatchMutationResp(state, MUTATION_SERVICE.FUNDING_SOURCE.UPDATE, action);
+      return mutationResp(state, MUTATION_SERVICE.FUNDING_SOURCE.UPDATE, action);
     case SUCCESS(ACTION_TYPE.DELETE_FUNDING_SOURCE):
-      return dispatchMutationResp(state, MUTATION_SERVICE.FUNDING_SOURCE.DELETE, action);
+      return mutationResp(state, MUTATION_SERVICE.FUNDING_SOURCE.DELETE, action);
 
     // --- Indicators search ---
     case REQUEST(ACTION_TYPE.SEARCH_INDICATORS):
@@ -667,7 +676,7 @@ function reducer(state = STORE_STATE, action) {
     case ERROR(ACTION_TYPE.TRANSITION_PTBA):
       return dispatchMutationErr(state, action);
     case SUCCESS(ACTION_TYPE.TRANSITION_PTBA):
-      return dispatchMutationResp(state, MUTATION_SERVICE.PTBA_TRANSITION.TRANSITION, action);
+      return mutationResp(state, MUTATION_SERVICE.PTBA_TRANSITION.TRANSITION, action);
 
     // --- PTBA Approve / Close mutations ---
     case REQUEST(ACTION_TYPE.APPROVE_PTBA):
@@ -677,9 +686,9 @@ function reducer(state = STORE_STATE, action) {
     case ERROR(ACTION_TYPE.CLOSE_PTBA):
       return dispatchMutationErr(state, action);
     case SUCCESS(ACTION_TYPE.APPROVE_PTBA):
-      return dispatchMutationResp(state, MUTATION_SERVICE.PTBA_APPROVE.APPROVE, action);
+      return mutationResp(state, MUTATION_SERVICE.PTBA_APPROVE.APPROVE, action);
     case SUCCESS(ACTION_TYPE.CLOSE_PTBA):
-      return dispatchMutationResp(state, MUTATION_SERVICE.PTBA_CLOSE.CLOSE, action);
+      return mutationResp(state, MUTATION_SERVICE.PTBA_CLOSE.CLOSE, action);
 
     // --- Revision workflow mutations ---
     case REQUEST(ACTION_TYPE.BEGIN_REVISION):
@@ -691,11 +700,11 @@ function reducer(state = STORE_STATE, action) {
     case ERROR(ACTION_TYPE.REJECT_REVISION):
       return dispatchMutationErr(state, action);
     case SUCCESS(ACTION_TYPE.BEGIN_REVISION):
-      return dispatchMutationResp(state, MUTATION_SERVICE.REVISION.BEGIN, action);
+      return mutationResp(state, MUTATION_SERVICE.REVISION.BEGIN, action);
     case SUCCESS(ACTION_TYPE.APPROVE_REVISION):
-      return dispatchMutationResp(state, MUTATION_SERVICE.REVISION.APPROVE, action);
+      return mutationResp(state, MUTATION_SERVICE.REVISION.APPROVE, action);
     case SUCCESS(ACTION_TYPE.REJECT_REVISION):
-      return dispatchMutationResp(state, MUTATION_SERVICE.REVISION.REJECT, action);
+      return mutationResp(state, MUTATION_SERVICE.REVISION.REJECT, action);
 
     // --- Calendar activities ---
     case REQUEST(ACTION_TYPE.GET_CALENDAR_ACTIVITIES):
@@ -731,7 +740,11 @@ function reducer(state = STORE_STATE, action) {
     case ERROR(ACTION_TYPE.MUTATION):
       return dispatchMutationErr(state, action);
     case `${ACTION_TYPE.MUTATION}_FAILED`:
-      return { ...state, submittingMutation: false, mutation: { ...state.mutation, ...action.meta } };
+      return {
+        ...state,
+        submittingMutation: false,
+        mutation: withOutcome({ ...state.mutation, ...action.meta }, action.meta),
+      };
 
     default:
       return state;
