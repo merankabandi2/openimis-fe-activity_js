@@ -161,7 +161,7 @@
   "activity.transition.history.empty": "Aucune transition enregistree pour cette activite.",
 
   "activity.execution.quarter": "Trimestre",
-  "activity.execution.year": "Annee",
+  "activity.execution.year": "Année du PTBA",
   "activity.execution.budgetPrevu": "Budget Prevu",
   "activity.execution.budgetEngage": "Budget Engage",
   "activity.execution.budgetDecaisse": "Budget Decaisse",

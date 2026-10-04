@@ -36,8 +36,8 @@ import {
   executionYearFilters,
   executionsOfQuarter,
   quarterSummaries,
-  quarterOf,
 } from '../../utils/execution';
+import { defaultExecutionPeriod, ptbaQuarterOf, ptbaYearLabel } from '../../utils/ptba-quarters';
 import ExecutionProgressBar from './ExecutionProgressBar';
 import ExecutionTimeline from './ExecutionTimeline';
 
@@ -87,6 +87,7 @@ const useStyles = makeStyles((theme) => ({
 function QuarterlyExecutionForm({
   activiteId,
   sousActivites,
+  fiscalYearStart,
   readOnly,
   fetchQuarterlyExecutions,
   reportQuarterlyExecution,
@@ -98,10 +99,17 @@ function QuarterlyExecutionForm({
   const classes = useStyles();
   const { formatMessage } = useTranslations(MODULE_NAME, modulesManager);
 
-  const currentYear = new Date().getFullYear();
-  const [selectedQuarter, setSelectedQuarter] = useState(1);
-  const [selectedYear, setSelectedYear] = useState(currentYear);
+  // Quarters and years are those of the PTBA (utils/ptba-quarters): the
+  // year is the calendar year the PTBA year starts in.
+  const period = useMemo(() => defaultExecutionPeriod(new Date(), fiscalYearStart), [fiscalYearStart]);
+  const [selectedQuarter, setSelectedQuarter] = useState(period.quarter);
+  const [selectedYear, setSelectedYear] = useState(period.year);
   const [formData, setFormData] = useState({});
+
+  useEffect(() => {
+    setSelectedQuarter(period.quarter);
+    setSelectedYear(period.year);
+  }, [period]);
 
   useEffect(() => {
     if (activiteId && selectedYear) {
@@ -110,8 +118,8 @@ function QuarterlyExecutionForm({
   }, [activiteId, selectedYear]);
 
   const timeline = useMemo(() => quarterSummaries(quarterlyExecutions), [quarterlyExecutions]);
-  const today = new Date();
-  const currentQuarter = selectedYear === today.getFullYear() ? quarterOf(today) : null;
+  const today = ptbaQuarterOf(new Date(), fiscalYearStart);
+  const currentQuarter = selectedYear === today.year ? today.quarter : null;
 
   useEffect(() => {
     const newFormData = {};
@@ -234,8 +242,8 @@ function QuarterlyExecutionForm({
             value={selectedYear}
             onChange={(e) => setSelectedYear(e.target.value)}
           >
-            {[currentYear - 1, currentYear, currentYear + 1].map((y) => (
-              <MenuItem key={y} value={y}>{y}</MenuItem>
+            {[period.year - 1, period.year, period.year + 1].map((y) => (
+              <MenuItem key={y} value={y}>{ptbaYearLabel(y, fiscalYearStart)}</MenuItem>
             ))}
           </Select>
         </FormControl>

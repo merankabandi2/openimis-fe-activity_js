@@ -35,6 +35,7 @@ import { MODULE_NAME } from '../../constants';
 import { useOwnedConfirm } from '../../utils/useOwnedConfirm';
 import WeeklyStatusBadge from '../lifecycle/WeeklyStatusBadge';
 import WeeklyPlanForm from './WeeklyPlanForm';
+import { ptbaQuarterOf, ptbaYearLabel, weeksOfPtbaQuarter } from '../../utils/ptba-quarters';
 
 const useStyles = makeStyles((theme) => ({
   tableContainer: {
@@ -87,65 +88,11 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-// Serialize a local Date as YYYY-MM-DD. toISOString() converts to UTC first,
-// which in UTC+2 (Bujumbura) turns a local Monday 00:00 into the previous
-// Sunday — shifting every weekStart/weekEnd a day earlier.
-function toLocalDateString(date) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
-}
-
-function getWeeksForQuarter(quarter, year) {
-  const weeks = [];
-  if (!quarter || !year) return weeks;
-
-  const quarterStartMonth = (quarter - 1) * 3;
-  const start = new Date(year, quarterStartMonth, 1);
-  const end = new Date(year, quarterStartMonth + 3, 0);
-
-  const dayOfWeek = start.getDay();
-  const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-  const currentMonday = new Date(start);
-  currentMonday.setDate(start.getDate() + diff);
-
-  let weekNum = 1;
-  while (currentMonday <= end) {
-    const friday = new Date(currentMonday);
-    friday.setDate(currentMonday.getDate() + 4);
-
-    const day1 = String(currentMonday.getDate()).padStart(2, '0');
-    const mon1 = String(currentMonday.getMonth() + 1).padStart(2, '0');
-    const day2 = String(friday.getDate()).padStart(2, '0');
-    const mon2 = String(friday.getMonth() + 1).padStart(2, '0');
-
-    weeks.push({
-      weekNum,
-      start: toLocalDateString(currentMonday),
-      end: toLocalDateString(friday),
-      label: `Sem ${weekNum}`,
-      dateRange: `${day1}/${mon1} - ${day2}/${mon2}`,
-    });
-
-    weekNum += 1;
-    currentMonday.setDate(currentMonday.getDate() + 7);
-  }
-
-  return weeks;
-}
-
-function getCurrentQuarterAndYear() {
-  const now = new Date();
-  const month = now.getMonth();
-  const quarter = Math.floor(month / 3) + 1;
-  return { quarter, year: now.getFullYear() };
-}
-
 function WeeklyPlanTab({
   journalize,
   activiteId,
   sousActivites,
+  fiscalYearStart,
   permissions,
   weeklyPlanEntries,
   fetchingWeeklyPlan,
@@ -169,8 +116,9 @@ function WeeklyPlanTab({
   const canUpdate = !!permissions?.canUpdateWeekly;
   const canDelete = !!permissions?.canDeleteWeekly;
 
-  const { quarter, year } = getCurrentQuarterAndYear();
-  const weeks = getWeeksForQuarter(quarter, year);
+  // The PTBA quarter of today, counted from the PTBA's fiscal_year_start.
+  const { quarter, year } = ptbaQuarterOf(new Date(), fiscalYearStart);
+  const weeks = weeksOfPtbaQuarter(quarter, year, fiscalYearStart);
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
@@ -265,7 +213,7 @@ function WeeklyPlanTab({
   return (
     <div>
       <Typography variant="subtitle2" gutterBottom>
-        {formatMessage('weeklyPlan.title')} - T{quarter} {year}
+        {formatMessage('weeklyPlan.title')} - T{quarter} {ptbaYearLabel(year, fiscalYearStart)}
       </Typography>
       <TableContainer className={classes.tableContainer}>
         <Table size="small" className={classes.table}>

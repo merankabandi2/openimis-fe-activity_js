@@ -159,7 +159,7 @@
   "activity.transition.history.empty": "No transitions recorded for this activity.",
 
   "activity.execution.quarter": "Quarter",
-  "activity.execution.year": "Year",
+  "activity.execution.year": "PTBA year",
   "activity.execution.budgetPrevu": "Planned Budget",
   "activity.execution.budgetEngage": "Committed Budget",
   "activity.execution.budgetDecaisse": "Disbursed Budget",

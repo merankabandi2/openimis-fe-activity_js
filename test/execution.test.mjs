@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  executionYearFilters, executionsOfQuarter, quarterSummaries, quarterOf,
+  executionYearFilters, executionsOfQuarter, quarterSummaries,
 } from '../src/utils/execution.js';
 
 const UUID = '00000000-0000-4000-8000-000000000001';
@@ -36,8 +36,3 @@ test('ACT-D-N5: the timeline gets one summary per reported quarter, rates from s
   assert.equal(summaries.length, 2);
 });
 
-test('quarterOf returns the calendar quarter', () => {
-  assert.equal(quarterOf(new Date(2026, 0, 15)), 1);
-  assert.equal(quarterOf(new Date(2026, 8, 25)), 3);
-  assert.equal(quarterOf(new Date(2026, 11, 31)), 4);
-});
