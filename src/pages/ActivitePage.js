@@ -164,6 +164,7 @@ function ActivitePage({
   const permissions = activityPermissions(rights, activite);
 
   const sousActivites = activite?.sousActivites?.edges?.map((e) => e.node) || [];
+  const fiscalYearStart = activite?.sousComposante?.composante?.ptba?.fiscalYearStart;
 
   const handleTransition = (toStatus, comment) => {
     transitionActivity(
@@ -407,6 +408,7 @@ function ActivitePage({
             <QuarterlyExecutionForm
               activiteId={activiteId}
               sousActivites={sousActivites}
+              fiscalYearStart={fiscalYearStart}
               readOnly={!permissions.canReportExecution}
             />
           </TabPanel>
@@ -446,6 +448,7 @@ function ActivitePage({
             <WeeklyPlanTab
               activiteId={activiteId}
               sousActivites={sousActivites}
+              fiscalYearStart={fiscalYearStart}
               permissions={permissions}
             />
           </TabPanel>

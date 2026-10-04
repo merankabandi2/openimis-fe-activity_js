@@ -47,6 +47,3 @@ export function quarterSummaries(executions) {
     tauxRealisation: rate(s.realises, s.attendus),
   }));
 }
-
-/** Current calendar quarter (1-4) of `date`. */
-export const quarterOf = (date) => Math.floor(date.getMonth() / 3) + 1;
